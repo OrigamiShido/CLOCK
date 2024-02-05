@@ -38,42 +38,35 @@ void DisplaySettings(void);
 bool Settime(void);
 bool Setdate(void);
 int setparameter(int maxcount,int parameter,int number);
+void judge(void);
+void transmit(void);
+
 
 int main(void)
 {
 	unsigned int status=114514;
-	unsigned int substatus=114514;
 	unsigned int lastnumber=0;
-	unsigned int sublastnumber=0;
-	double result=0;
+
 	bool isset=false;
 	bool isclear=false;
+
 	uint32_t EEPROMEmulationState;
+
 	uint8_t week=9;
-	SYSCFG_DL_init();                      //��ʼ��
-	//	NVIC_EnableIRQ(ADC0_INT_IRQn);         //??ADC??
-	//	gCheckADC = false;                     //???ADC???????
-	//NVIC_EnableIRQ(MATRIX_INT_IRQN);
+	
+	SYSCFG_DL_init();
 	//timer enabler
 	DL_TimerG_startCounter(TIMER_0_INST);
 	NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
 	//OLED self test
-	OLED_Init();			//��ʼ��OLED  
+	OLED_Init();
 	OLED_Clear();
-
 	EEPROM_TypeA_eraseAllSectors();
     EEPROMEmulationState = EEPROM_TypeA_init(&EEPROMEmulationBuffer[0]);
-	
 	while (1) 
 	{
-		
-		DL_UART_Main_transmitDataBlocking(UART1, hour);
-		DL_UART_Main_transmitDataBlocking(UART1, minute);
-		DL_UART_Main_transmitDataBlocking(UART1, second);
-		DL_UART_Main_transmitDataBlocking(UART1, '\n');
-						
+		transmit();
 		week=countweek(year,month,day);
-
 		if(ischanged)
 		{
 			showtime(hour,minute,second,year,month,day,week);
@@ -95,12 +88,12 @@ int main(void)
 							DisplaySettings();
 							isclear=true;
 						}
-						substatus=scan();
-						if(substatus!=114514)
+						status=scan();
+						if(status!=114514)
 						{
-							if(sublastnumber!=substatus)
+							if(lastnumber!=status)
 							{
-								switch(substatus)
+								switch(status)
 								{
 									case 1:
 									isclear=Settime();
@@ -115,7 +108,7 @@ int main(void)
 								}
 							}
 						}
-						sublastnumber=substatus;
+						lastnumber=status;
 						if(isset)
 						{
 							isset=false;
@@ -141,6 +134,12 @@ int main(void)
 void TIMER_0_INST_IRQHandler (void){
 	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);
 	second++;
+	judge();
+	ischanged=true;
+}
+
+void judge(void)
+{
 	if(second>=60)
 	{
 		second=0;
@@ -203,20 +202,6 @@ void TIMER_0_INST_IRQHandler (void){
 	{
 		year=0;
 	}
-	ischanged=true;
-}
-
-int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
-{
-	uint32_t tempyear=countyear;
-	uint8_t tempmonth=countmonth;
-	uint8_t tempday=countday;
-	if(countmonth==1||countmonth==2)
-	{
-		tempmonth+=12;
-		tempyear--;
-	}
-	return (tempday+2*tempmonth+3*(tempmonth+1)/5+tempyear+tempyear/4-tempyear/100+tempyear/400)%7;
 }
 
 void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek)
@@ -973,4 +958,25 @@ int debunce(uint32_t inputpin, uint32_t control)
 	}
 	else return 0;
 	}
+}
+
+int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
+{
+	uint32_t tempyear=countyear;
+	uint8_t tempmonth=countmonth;
+	uint8_t tempday=countday;
+	if(countmonth==1||countmonth==2)
+	{
+		tempmonth+=12;
+		tempyear--;
+	}
+	return (tempday+2*tempmonth+3*(tempmonth+1)/5+tempyear+tempyear/4-tempyear/100+tempyear/400)%7;
+}
+
+void transmit(void)
+{
+	DL_UART_Main_transmitDataBlocking(UART1, hour);
+	DL_UART_Main_transmitDataBlocking(UART1, minute);
+	DL_UART_Main_transmitDataBlocking(UART1, second);
+	DL_UART_Main_transmitDataBlocking(UART1, '\n');
 }
