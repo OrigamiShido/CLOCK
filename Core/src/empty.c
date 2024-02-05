@@ -27,8 +27,6 @@ uint8_t day=1;
 uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
-unsigned int week=9;
-
 bool ischanged=false;
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
@@ -51,7 +49,7 @@ int main(void)
 	bool isset=false;
 	bool isclear=false;
 	uint32_t EEPROMEmulationState;
-
+	uint8_t week=9;
 	SYSCFG_DL_init();                      //��ʼ��
 	//	NVIC_EnableIRQ(ADC0_INT_IRQn);         //??ADC??
 	//	gCheckADC = false;                     //???ADC???????
