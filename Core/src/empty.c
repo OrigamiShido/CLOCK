@@ -16,18 +16,22 @@ uint8_t TxPacket[4] = {0x90, 0x00, 0x00, 0x00};  //��������
 uint8_t RxPacket[4]={0x00, 0x00, 0x00, 0x00};   //��������
 uint8_t RxTemp; //��ʱ���ݣ���ս���FIFO��
 
-uint8_t hour=0;
-uint8_t minute=0;
-uint8_t second=0;
+struct Date{
+	uint32_t year;
+	uint8_t month;
+	uint8_t day;
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t second;
+};
 
-uint32_t year=2024;
-uint8_t month=2;
-uint8_t day=1;
+struct Date date={2024,2,1,0,0,0};
 
 uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
+bool savedata=false;
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -35,12 +39,11 @@ int debunce(uint32_t inputpin, uint32_t control);
 int digitalcount(double input);
 void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
 void DisplaySettings(void);
-bool Settime(void);
-bool Setdate(void);
+void Settime(void);
+void Setdate(void);
 int setparameter(int maxcount,int parameter,int number);
-void judge(void);
+struct Date judge(struct Date judgedate);
 void transmit(void);
-
 
 int main(void)
 {
@@ -61,15 +64,15 @@ int main(void)
 	//OLED self test
 	OLED_Init();
 	OLED_Clear();
+
 	EEPROM_TypeA_eraseAllSectors();
     EEPROMEmulationState = EEPROM_TypeA_init(&EEPROMEmulationBuffer[0]);
 	while (1) 
 	{
-		transmit();
-		week=countweek(year,month,day);
+		week=countweek(date.year,date.month,date.day);
 		if(ischanged)
 		{
-			showtime(hour,minute,second,year,month,day,week);
+			showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 			ischanged=false;
 		}
 		status=scan();
@@ -96,10 +99,12 @@ int main(void)
 								switch(status)
 								{
 									case 1:
-									isclear=Settime();
+									isclear=false;
+									Settime();
 									break;	
 									case 2:
-									isclear=Setdate();
+									isclear=false;
+									Setdate();
 									break;
 									case 3:isset=true;
 									isclear=false;
@@ -133,75 +138,77 @@ int main(void)
 
 void TIMER_0_INST_IRQHandler (void){
 	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);
-	second++;
-	judge();
+	date.second++;
+	date=judge(date);
+	transmit();
 	ischanged=true;
 }
 
-void judge(void)
+struct Date judge(struct Date judgedate)
 {
-	if(second>=60)
+	if(judgedate.second>=60)
 	{
-		second=0;
-		minute++;
+		judgedate.second=0;
+		judgedate.minute++;
 	}
-	if(minute>=60)
+	if(judgedate.minute>=60)
 	{
-		minute=0;
-		hour++;
+		judgedate.minute=0;
+		judgedate.hour++;
 	}
-	if(hour>=24)
+	if(judgedate.hour>=24)
 	{
-		hour=0;
-		day++;
+		judgedate.hour=0;
+		judgedate.day++;
 	}
-	switch(day)
+	switch(judgedate.day)
 	{
-		case 29:if((year%4==0&&year%100!=0)||(year%400==0))
+		case 29:if((judgedate.year%4==0&&judgedate.year%100!=0)||(judgedate.year%400==0))
 					{
-						if(month==2)
+						if(judgedate.month==2)
 						break;
 					}
 				else
 				{
-					if(month==2)
+					if(judgedate.month==2)
 					{
-						day=1;
-						month++;
+						judgedate.day=1;
+						judgedate.month++;
 					}
 				}
-		case 30:if((year%4==0&&year%100!=0)||year%400==0)
+		case 30:if((judgedate.year%4==0&&judgedate.year%100!=0)||judgedate.year%400==0)
 				{
-					if(month==2)
+					if(judgedate.month==2)
 					{
-						day=1;
-						month++;
+						judgedate.day=1;
+						judgedate.month++;
 					}
 				}
 				else break;
-		case 31:if(month==4||month==6||month==9||month==11)
+		case 31:if(judgedate.month==4||judgedate.month==6||judgedate.month==9||judgedate.month==11)
 				{
-					day=1;
-					month++;
+					judgedate.day=1;
+					judgedate.month++;
 				}
 				else break;
-		case 32:if(month==1||month==3||month==5||month==7||month==8||month==10||month==12)
+		case 32:if(judgedate.month==1||judgedate.month==3||judgedate.month==5||judgedate.month==7||judgedate.month==8||judgedate.month==10||judgedate.month==12)
 				{
-					day=1;
-					month++;
+					judgedate.day=1;
+					judgedate.month++;
 				}
 				else break;
 		default:break;
 	}
-	if(month==13)
+	if(judgedate.month==13)
 	{
-		month=1;
-		year++;
+		judgedate.month=1;
+		judgedate.year++;
 	}
-	if(year>=10000)
+	if(judgedate.year>=10000)
 	{
-		year=0;
+		judgedate.year=0;
 	}
+	return judgedate;
 }
 
 void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek)
@@ -415,18 +422,21 @@ void DisplaySettings(void)
 	OLED_ShowString(0,6,"3. Exit");
 }
 
-bool Settime(void)
+void Settime(void)
 {
 	unsigned int yscale=0;
 	unsigned int status=114514;
 	unsigned int lastnumber=1;
+	
 	unsigned int sethour=0;
 	unsigned int setminute=0;
 	unsigned int setsecond=0;
 	unsigned int settingparameter=HOUR;
+	
 	bool iscanceled=false;
 	bool isset=false;
 	bool isbackspaced=true;
+
 	while(1)
 	{
 		if(isbackspaced)
@@ -564,9 +574,9 @@ bool Settime(void)
 		{
 			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
 			{
-				hour=sethour;
-				minute=setminute;
-				second=setsecond;
+				date.hour=sethour;
+				date.minute=setminute;
+				date.second=setsecond;
 				ischanged=true;
 				break;
 			}
@@ -580,10 +590,10 @@ bool Settime(void)
 			}
 		}
 	}
-	return false;
+	//return false;
 }
 
-bool Setdate(void)
+void Setdate(void)
 {
 	unsigned int yscale=0;
 	unsigned int status=114514;
@@ -800,9 +810,9 @@ bool Setdate(void)
 						}
 					}
 				}
-				year=setyear;
-				month=setmonth;
-				day=setday;
+				date.year=setyear;
+				date.month=setmonth;
+				date.day=setday;
 				ischanged=true;
 				break;
 			}
@@ -816,7 +826,7 @@ bool Setdate(void)
 			}
 		}
 	}
-	return false;
+	//return false;
 }
 
 int setparameter(int maxcount,int parameter,int number)
@@ -975,8 +985,8 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 
 void transmit(void)
 {
-	DL_UART_Main_transmitDataBlocking(UART1, hour);
-	DL_UART_Main_transmitDataBlocking(UART1, minute);
-	DL_UART_Main_transmitDataBlocking(UART1, second);
+	DL_UART_Main_transmitDataBlocking(UART1, date.hour);
+	DL_UART_Main_transmitDataBlocking(UART1, date.minute);
+	DL_UART_Main_transmitDataBlocking(UART1, date.second);
 	DL_UART_Main_transmitDataBlocking(UART1, '\n');
 }
