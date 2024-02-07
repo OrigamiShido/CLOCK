@@ -9,7 +9,14 @@
 #define YEAR 3
 #define MONTH 4
 #define DAY 5
+
+#define CLOCK 6
+#define ALARM1 7
+#define ALARM2 8
+#define ALARM3 9
+
 #define ADDRESS 0x9000
+#define ALARMADDRESS 0x9100//temporary
 
 //OLED PARAMETER
 uint8_t TxPacket[4] = {0x90, 0x00, 0x00, 0x00};  //��������
@@ -43,10 +50,14 @@ void Settime(void);
 void Setdate(void);
 int setparameter(int maxcount,int parameter,int number);
 struct Date judge(struct Date judgedate);
-void transmit(void);
+void transmit(struct Date target);
+void save(struct Date savedate);
+struct Date read(uint8_t mode);
+bool validate(struct Date target);
 
 int main(void)
 {
+	//VARIABLES
 	unsigned int status=114514;
 	unsigned int lastnumber=0;
 
@@ -57,6 +68,8 @@ int main(void)
 
 	uint8_t week=9;
 	
+	struct Date breakpoint={0,0,0,0,0,0};
+
 	SYSCFG_DL_init();
 	//timer enabler
 	DL_TimerG_startCounter(TIMER_0_INST);
@@ -65,8 +78,12 @@ int main(void)
 	OLED_Init();
 	OLED_Clear();
 
-	EEPROM_TypeA_eraseAllSectors();
-    EEPROMEmulationState = EEPROM_TypeA_init(&EEPROMEmulationBuffer[0]);
+	//EEPROM_TypeA_eraseAllSectors();
+    //EEPROMEmulationState = EEPROM_TypeA_init(&EEPROMEmulationBuffer[0]);
+
+	breakpoint=read(CLOCK);
+	if(validate(breakpoint))
+		date=breakpoint;
 	while (1) 
 	{
 		week=countweek(date.year,date.month,date.day);
@@ -121,9 +138,15 @@ int main(void)
 						}
 					}
 					break;
-					case 13:break;
-					case 14:break;
-					case 15:break;
+					case 13:
+					EEPROM_TypeA_eraseAllSectors();
+					break;
+					case 14:
+					breakpoint=read(CLOCK);
+					break;
+					case 15:
+					save(date);
+					break;
 					defualt:break;
 				}
 			}
@@ -140,8 +163,42 @@ void TIMER_0_INST_IRQHandler (void){
 	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);
 	date.second++;
 	date=judge(date);
-	transmit();
+	transmit(date);
+	//save(date);
 	ischanged=true;
+}
+
+bool validate(struct Date target)
+{
+	if(target.year>=0&&target.year<=9999&&target.month>=1&&target.month<=12&&target.day>=1&&target.day<=31&&target.hour>=0&&target.hour<=23&&target.minute>=0&&target.minute<=59&&target.second>=0&&target.second<=59)
+	{
+		if((target.month==4||target.month==6||target.month==9||target.month==11)&&target.day==31)
+		{
+			return false;
+		}
+		if(target.month==2)
+		{
+			if((target.year%4==0&&target.year%100!=0)||(target.year%400==0))
+			{
+				if(target.day>29)
+				{
+					return false;
+				}
+			}
+			else
+			{
+				if(target.day>28)
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 struct Date judge(struct Date judgedate)
@@ -829,6 +886,38 @@ void Setdate(void)
 	//return false;
 }
 
+void save(struct Date savedate)
+{
+	EEPROM_TypeA_eraseAllSectors();
+	dataarray[0]=savedate.year;
+	dataarray[1]=savedate.month;
+	dataarray[2]=savedate.day;
+	dataarray[3]=savedate.hour;
+	dataarray[4]=savedate.minute;
+	dataarray[5]=savedate.second;
+	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);
+	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 6, DL_FLASHCTL_REGION_SELECT_MAIN);
+}
+
+struct Date read(uint8_t mode)
+{
+	uint32_t address=ADDRESS;
+	switch(mode)
+	{
+		case CLOCK:address=ADDRESS;break;
+		case ALARM1:break;
+		case ALARM2:break;
+		case ALARM3:break;
+		default:break;
+	}
+	for(unsigned int i=0;i<EEPROM_EMULATION_DATA_SIZE/sizeof(uint32_t);i++)
+		EEPROMEmulationBuffer[i]=0;
+	for(int i=0;(*(uint32_t *)(address+i))!=0xFFFFFFFF;i+=4)
+		EEPROMEmulationBuffer[i/4]=*(uint32_t *)(address+i);
+	struct Date result={EEPROMEmulationBuffer[0],EEPROMEmulationBuffer[1],EEPROMEmulationBuffer[2],EEPROMEmulationBuffer[3],EEPROMEmulationBuffer[4],EEPROMEmulationBuffer[5]};
+	return result;	
+}
+
 int setparameter(int maxcount,int parameter,int number)
 {
 	int count=digitalcount(parameter);
@@ -983,10 +1072,10 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 	return (tempday+2*tempmonth+3*(tempmonth+1)/5+tempyear+tempyear/4-tempyear/100+tempyear/400)%7;
 }
 
-void transmit(void)
+void transmit(struct Date target)
 {
-	DL_UART_Main_transmitDataBlocking(UART1, date.hour);
-	DL_UART_Main_transmitDataBlocking(UART1, date.minute);
-	DL_UART_Main_transmitDataBlocking(UART1, date.second);
+	DL_UART_Main_transmitDataBlocking(UART1, target.hour);
+	DL_UART_Main_transmitDataBlocking(UART1, target.minute);
+	DL_UART_Main_transmitDataBlocking(UART1, target.second);
 	DL_UART_Main_transmitDataBlocking(UART1, '\n');
 }
