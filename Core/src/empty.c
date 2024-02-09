@@ -45,6 +45,7 @@ int scan(void);
 int debunce(uint32_t inputpin, uint32_t control);
 int digitalcount(double input);
 void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
+void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
 void DisplaySettings(void);
 void Settime(void);
 void Setdate(void);
@@ -63,6 +64,7 @@ int main(void)
 
 	bool isset=false;
 	bool isclear=false;
+	bool is24hour=true;
 
 	uint32_t EEPROMEmulationState;
 
@@ -83,13 +85,20 @@ int main(void)
 
 	breakpoint=read(CLOCK);
 	if(validate(breakpoint))
+	{
 		date=breakpoint;
+		date.second--;
+	}
 	while (1) 
 	{
 		week=countweek(date.year,date.month,date.day);
 		if(ischanged)
 		{
-			showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+			if(is24hour)
+				showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+			else
+				showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+			save(date);
 			ischanged=false;
 		}
 		status=scan();
@@ -99,7 +108,7 @@ int main(void)
 			{
 				switch(status)
 				{
-					case 12:
+					case 12://时钟设置子菜单
 					while(1)
 					{
 						if(!isclear)
@@ -138,14 +147,18 @@ int main(void)
 						}
 					}
 					break;
-					case 13:
-					EEPROM_TypeA_eraseAllSectors();
+					case 13://24小时制切换
+					is24hour=!is24hour;
+					if(is24hour)
+						showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+					else
+						showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 					break;
 					case 14:
-					breakpoint=read(CLOCK);
+					
 					break;
 					case 15:
-					save(date);
+					EEPROM_TypeA_eraseAllSectors();
 					break;
 					defualt:break;
 				}
@@ -467,6 +480,22 @@ void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t sh
 		case 5:OLED_ShowString(2,4,"Sat");break;
 		case 6:OLED_ShowString(2,4,"Sun");break;
 		default:break;
+	}
+}
+
+void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek)
+{
+	if(showhour>=12)
+	{
+		if(showhour>12)
+			showhour-=12;
+		showtime(showhour,showminute,showsecond,showyear,showmonth,showday,showweek);
+		OLED_ShowString(64,0,"(PM)");
+	}
+	else
+	{
+		showtime(showhour,showminute,showsecond,showyear,showmonth,showday,showweek);
+		OLED_ShowString(64,0,"(AM)");
 	}
 }
 
