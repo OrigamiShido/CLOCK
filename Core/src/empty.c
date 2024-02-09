@@ -55,6 +55,7 @@ void transmit(struct Date target);
 void save(struct Date savedate);
 struct Date read(uint8_t mode);
 bool validate(struct Date target);
+void DisplayFunctions(void);
 
 int main(void)
 {
@@ -134,6 +135,7 @@ int main(void)
 									break;
 									case 3:isset=true;
 									isclear=false;
+									OLED_Clear();
 									break;
 									default:break;
 								}
@@ -149,13 +151,51 @@ int main(void)
 					break;
 					case 13://24小时制切换
 					is24hour=!is24hour;
+					OLED_Clear();
 					if(is24hour)
 						showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 					else
 						showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 					break;
-					case 14:
-					
+					case 14://额外功能子菜单：闹钟，计时器
+					while(1)
+					{
+						if(!isclear)
+						{
+							OLED_Clear();
+							DisplayFunctions();
+							isclear=true;
+						}
+						status=scan();
+						if(status!=114514)
+						{
+							if(lastnumber!=status)
+							{
+								switch(status)
+								{
+									case 1:
+									isclear=false;
+									//waiting to insert
+									break;	
+									case 2:
+									isclear=false;
+									//waiting to insert
+									break;
+									case 3:isset=true;
+									isclear=false;
+									OLED_Clear();
+									break;
+									default:break;
+								}
+							}
+						}
+						lastnumber=status;
+						if(isset)
+						{
+							isset=false;
+							break;
+						}
+					}
 					break;
 					case 15:
 					EEPROM_TypeA_eraseAllSectors();
@@ -284,7 +324,7 @@ struct Date judge(struct Date judgedate)
 void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek)
 {
 	unsigned int yeardigital=digitalcount(showyear);
-	OLED_Clear();
+	//OLED_Clear();
 	
 	switch(showhour)
 	{
@@ -505,6 +545,15 @@ void DisplaySettings(void)
 	OLED_ShowString(0,0,"Settings");
 	OLED_ShowString(0,2,"1. Set Time");
 	OLED_ShowString(0,4,"2. Set Date");
+	OLED_ShowString(0,6,"3. Exit");
+}
+
+void DisplayFunctions(void)
+{
+	OLED_Clear();
+	OLED_ShowString(0,0,"Functions");
+	OLED_ShowString(0,2,"1. Set Alarm");
+	OLED_ShowString(0,4,"2. Set Timer");
 	OLED_ShowString(0,6,"3. Exit");
 }
 
