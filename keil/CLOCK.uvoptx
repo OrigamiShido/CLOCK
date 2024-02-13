@@ -190,6 +190,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>breakpoint</ItemText>
         </Ww>
+        <Ww>
+          <count>8</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>date</ItemText>
+        </Ww>
       </WatchWindow1>
       <MemoryWindow1>
         <Mm>

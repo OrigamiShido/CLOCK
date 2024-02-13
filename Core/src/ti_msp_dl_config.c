@@ -51,6 +51,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     /* Module-Specific Initializations*/
     SYSCFG_DL_SYSCTL_init();
     SYSCFG_DL_TIMER_0_init();
+    SYSCFG_DL_TIMER_1_init();
     SYSCFG_DL_UART_0_init();
 }
 
@@ -58,10 +59,12 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
 {
     DL_GPIO_reset(GPIOA);
     DL_TimerG_reset(TIMER_0_INST);
+    DL_TimerG_reset(TIMER_1_INST);
     DL_UART_Main_reset(UART_0_INST);
 
     DL_GPIO_enablePower(GPIOA);
     DL_TimerG_enablePower(TIMER_0_INST);
+    DL_TimerG_enablePower(TIMER_1_INST);
     DL_UART_Main_enablePower(UART_0_INST);
     delay_cycles(POWER_STARTUP_DELAY);
 }
@@ -102,6 +105,10 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 
     DL_GPIO_initDigitalInput(MATRIX_H4_IOMUX);
 
+    DL_GPIO_initDigitalOutput(BUZZER_SDA_IOMUX);
+
+    DL_GPIO_initDigitalOutput(BUZZER_SCL_IOMUX);
+
     DL_GPIO_clearPins(GPIOA, GPIO_GRP_0_LED_PIN |
 		GPIO_GRP_0_D0_PIN |
 		GPIO_GRP_0_D1_PIN |
@@ -109,9 +116,11 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		MATRIX_V1_PIN |
 		MATRIX_V2_PIN |
 		MATRIX_V3_PIN |
-		MATRIX_V4_PIN);
+		MATRIX_V4_PIN |
+		BUZZER_SCL_PIN);
     DL_GPIO_setPins(GPIOA, LEDLIGHTS_LEDlight_PIN |
-		GPIO_GRP_0_CS_PIN);
+		GPIO_GRP_0_CS_PIN |
+		BUZZER_SDA_PIN);
     DL_GPIO_enableOutput(GPIOA, LEDLIGHTS_LEDlight_PIN |
 		GPIO_GRP_0_CS_PIN |
 		GPIO_GRP_0_LED_PIN |
@@ -121,7 +130,9 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		MATRIX_V1_PIN |
 		MATRIX_V2_PIN |
 		MATRIX_V3_PIN |
-		MATRIX_V4_PIN);
+		MATRIX_V4_PIN |
+		BUZZER_SDA_PIN |
+		BUZZER_SCL_PIN);
     DL_GPIO_setLowerPinsPolarity(GPIOA, DL_GPIO_PIN_0_EDGE_FALL |
 		DL_GPIO_PIN_1_EDGE_FALL |
 		DL_GPIO_PIN_7_EDGE_FALL |
@@ -183,6 +194,43 @@ SYSCONFIG_WEAK void SYSCFG_DL_TIMER_0_init(void) {
     DL_TimerG_enableInterrupt(TIMER_0_INST , DL_TIMERG_INTERRUPT_ZERO_EVENT);
 	NVIC_SetPriority(TIMER_0_INST_INT_IRQN, 0);
     DL_TimerG_enableClock(TIMER_0_INST);
+
+
+
+
+}
+
+/*
+ * Timer clock configuration to be sourced by LFCLK /  (32768 Hz)
+ * timerClkFreq = (timerClkSrc / (timerClkDivRatio * (timerClkPrescale + 1)))
+ *   32768 Hz = 32768 Hz / (1 * (0 + 1))
+ */
+static const DL_TimerG_ClockConfig gTIMER_1ClockConfig = {
+    .clockSel    = DL_TIMER_CLOCK_LFCLK,
+    .divideRatio = DL_TIMER_CLOCK_DIVIDE_1,
+    .prescale    = 0U,
+};
+
+/*
+ * Timer load value (where the counter starts from) is calculated as (timerPeriod * timerClockFreq) - 1
+ * TIMER_1_INST_LOAD_VALUE = (1 ms * 32768 Hz) - 1
+ */
+static const DL_TimerG_TimerConfig gTIMER_1TimerConfig = {
+    .period     = TIMER_1_INST_LOAD_VALUE,
+    .timerMode  = DL_TIMER_TIMER_MODE_PERIODIC,
+    .startTimer = DL_TIMER_STOP,
+};
+
+SYSCONFIG_WEAK void SYSCFG_DL_TIMER_1_init(void) {
+
+    DL_TimerG_setClockConfig(TIMER_1_INST,
+        (DL_TimerG_ClockConfig *) &gTIMER_1ClockConfig);
+
+    DL_TimerG_initTimerMode(TIMER_1_INST,
+        (DL_TimerG_TimerConfig *) &gTIMER_1TimerConfig);
+    DL_TimerG_enableInterrupt(TIMER_1_INST , DL_TIMERG_INTERRUPT_ZERO_EVENT);
+	NVIC_SetPriority(TIMER_1_INST_INT_IRQN, 2);
+    DL_TimerG_enableClock(TIMER_1_INST);
 
 
 

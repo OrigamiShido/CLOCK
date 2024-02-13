@@ -77,10 +77,15 @@ extern "C" {
 
 
 /* Defines for TIMER_0 */
-#define TIMER_0_INST                                                     (TIMG0)
-#define TIMER_0_INST_IRQHandler                                 TIMG0_IRQHandler
-#define TIMER_0_INST_INT_IRQN                                   (TIMG0_INT_IRQn)
+#define TIMER_0_INST                                                     (TIMG1)
+#define TIMER_0_INST_IRQHandler                                 TIMG1_IRQHandler
+#define TIMER_0_INST_INT_IRQN                                   (TIMG1_INT_IRQn)
 #define TIMER_0_INST_LOAD_VALUE                                         (32767U)
+/* Defines for TIMER_1 */
+#define TIMER_1_INST                                                     (TIMG0)
+#define TIMER_1_INST_IRQHandler                                 TIMG0_IRQHandler
+#define TIMER_1_INST_INT_IRQN                                   (TIMG0_INT_IRQn)
+#define TIMER_1_INST_LOAD_VALUE                                            (32U)
 
 
 
@@ -162,6 +167,15 @@ extern "C" {
 #define MATRIX_H4_IIDX                                      (DL_GPIO_IIDX_DIO12)
 #define MATRIX_H4_PIN                                           (DL_GPIO_PIN_12)
 #define MATRIX_H4_IOMUX                                          (IOMUX_PINCM13)
+/* Port definition for Pin Group BUZZER */
+#define BUZZER_PORT                                                      (GPIOA)
+
+/* Defines for SDA: GPIOA.16 with pinCMx 17 on package pin 20 */
+#define BUZZER_SDA_PIN                                          (DL_GPIO_PIN_16)
+#define BUZZER_SDA_IOMUX                                         (IOMUX_PINCM17)
+/* Defines for SCL: GPIOA.15 with pinCMx 16 on package pin 19 */
+#define BUZZER_SCL_PIN                                          (DL_GPIO_PIN_15)
+#define BUZZER_SCL_IOMUX                                         (IOMUX_PINCM16)
 
 /* clang-format on */
 
@@ -170,6 +184,7 @@ void SYSCFG_DL_initPower(void);
 void SYSCFG_DL_GPIO_init(void);
 void SYSCFG_DL_SYSCTL_init(void);
 void SYSCFG_DL_TIMER_0_init(void);
+void SYSCFG_DL_TIMER_1_init(void);
 void SYSCFG_DL_UART_0_init(void);
 
 

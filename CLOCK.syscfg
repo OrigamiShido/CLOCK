@@ -13,9 +13,11 @@ const GPIO   = scripting.addModule("/ti/driverlib/GPIO", {}, false);
 const GPIO1  = GPIO.addInstance();
 const GPIO2  = GPIO.addInstance();
 const GPIO3  = GPIO.addInstance();
+const GPIO4  = GPIO.addInstance();
 const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
 const TIMER  = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER1 = TIMER.addInstance();
+const TIMER2 = TIMER.addInstance();
 const UART   = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART1  = UART.addInstance();
 
@@ -76,6 +78,14 @@ GPIO3.associatedPins[0].$name        = "LEDlight";
 GPIO3.associatedPins[0].initialValue = "SET";
 GPIO3.associatedPins[0].assignedPin  = "9";
 
+GPIO4.$name                          = "BUZZER";
+GPIO4.associatedPins.create(2);
+GPIO4.associatedPins[0].assignedPin  = "16";
+GPIO4.associatedPins[0].$name        = "SDA";
+GPIO4.associatedPins[0].initialValue = "SET";
+GPIO4.associatedPins[1].assignedPin  = "15";
+GPIO4.associatedPins[1].$name        = "SCL";
+
 SYSCTL.MFCLKEn = true;
 
 TIMER1.$name             = "TIMER_0";
@@ -84,6 +94,13 @@ TIMER1.timerClkSrc       = "LFCLK";
 TIMER1.timerMode         = "PERIODIC";
 TIMER1.interrupts        = ["ZERO"];
 TIMER1.interruptPriority = "0";
+
+TIMER2.$name             = "TIMER_1";
+TIMER2.timerClkSrc       = "LFCLK";
+TIMER2.timerPeriod       = "1 ms";
+TIMER2.timerMode         = "PERIODIC";
+TIMER2.interrupts        = ["ZERO"];
+TIMER2.interruptPriority = "2";
 
 UART1.$name                    = "UART_0";
 UART1.uartClkSrc               = "MFCLK";
@@ -116,6 +133,9 @@ GPIO2.associatedPins[5].pin.$suggestSolution = "PA1";
 GPIO2.associatedPins[6].pin.$suggestSolution = "PA7";
 GPIO2.associatedPins[7].pin.$suggestSolution = "PA12";
 GPIO3.associatedPins[0].pin.$suggestSolution = "PA9";
+GPIO4.associatedPins[0].pin.$suggestSolution = "PA16";
+GPIO4.associatedPins[1].pin.$suggestSolution = "PA15";
 SYSCTL.peripheral.$suggestSolution           = "SYSCTL";
-TIMER1.peripheral.$suggestSolution           = "TIMG0";
+TIMER1.peripheral.$suggestSolution           = "TIMG1";
+TIMER2.peripheral.$suggestSolution           = "TIMG0";
 UART1.peripheral.$suggestSolution            = "UART1";

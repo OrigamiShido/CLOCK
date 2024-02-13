@@ -16,7 +16,9 @@
 #define ALARM3 9
 
 #define ADDRESS 0x9000
-#define ALARMADDRESS 0x9100//temporary
+#define ALARMADDRESS 0x9018
+#define ALARMADDRESS2 0x902c
+#define ALARMADDRESS3 0x9044
 
 //OLED PARAMETER
 uint8_t TxPacket[4] = {0x90, 0x00, 0x00, 0x00};  //��������
@@ -32,7 +34,19 @@ struct Date{
 	uint8_t second;
 };
 
+struct Alarm{
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+  bool ison;
+};
+
 struct Date date={2024,2,1,0,0,0};
+/*struct Alarm alarm1={0,0,0,false};
+struct Alarm alarm2={0,0,0,false};
+struct Alarm alarm3={0,0,0,false};*/
+
+struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
 
 uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
@@ -56,6 +70,18 @@ void save(struct Date savedate);
 struct Date read(uint8_t mode);
 bool validate(struct Date target);
 void DisplayFunctions(void);
+//new functions
+void SetAlarm(struct Alarm target);
+void DisplayCounter(void);
+bool CheckAlarm(struct Date target);
+void Beep(void);
+struct Alarm readalarm(uint32_t address);
+bool validatealarm(struct Alarm target);
+void savealarm(struct Alarm savetarget, uint32_t address);
+void DisplayAlarm(void);
+void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);
+void DisplayAlarmSecond(int target);
+bool CompareAlarm(struct Alarm target1,struct Alarm target2);
 
 int main(void)
 {
@@ -72,6 +98,7 @@ int main(void)
 	uint8_t week=9;
 	
 	struct Date breakpoint={0,0,0,0,0,0};
+	struct Alarm savealarm[3];
 
 	SYSCFG_DL_init();
 	//timer enabler
@@ -90,6 +117,14 @@ int main(void)
 		date=breakpoint;
 		date.second--;
 	}
+	for(uint8_t i=0;i<3;i++)
+	{
+	  savealarm[i]=readalarm(ALARMADDRESS+4*i);
+	  if(validatealarm(savealarm[i]))
+	  {
+		alarms[i]=savealarm[i];
+	  }
+	}
 	while (1) 
 	{
 		week=countweek(date.year,date.month,date.day);
@@ -101,6 +136,10 @@ int main(void)
 				showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 			save(date);
 			ischanged=false;
+			if(CheckAlarm(date))
+			{
+			  Beep();
+			}
 		}
 		status=scan();
 		if(status!=114514)
@@ -175,11 +214,11 @@ int main(void)
 								{
 									case 1:
 									isclear=false;
-									//waiting to insert
+									DisplayAlarm();
 									break;	
 									case 2:
 									isclear=false;
-									//waiting to insert
+									DisplayCounter();
 									break;
 									case 3:isset=true;
 									isclear=false;
@@ -536,6 +575,163 @@ void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_
 	{
 		showtime(showhour,showminute,showsecond,showyear,showmonth,showday,showweek);
 		OLED_ShowString(64,0,"(AM)");
+	}
+}
+
+void showtimesimplified(int x, int y,uint8_t showhour,uint8_t showminute,uint8_t showsecond)
+{
+  switch(showhour)
+	{
+		case 0:OLED_ShowString(x,y,"00:");break;
+		case 1:OLED_ShowString(x,y,"01:");break;
+		case 2:OLED_ShowString(x,y,"02:");break;
+		case 3:OLED_ShowString(x,y,"03:");break;
+		case 4:OLED_ShowString(x,y,"04:");break;
+		case 5:OLED_ShowString(x,y,"05:");break;
+		case 6:OLED_ShowString(x,y,"06:");break;
+		case 7:OLED_ShowString(x,y,"07:");break;
+		case 8:OLED_ShowString(x,y,"08:");break;
+		case 9:OLED_ShowString(x,y,"09:");break;
+		case 10:OLED_ShowString(x,y,"10:");break;
+		case 11:OLED_ShowString(x,y,"11:");break;
+		case 12:OLED_ShowString(x,y,"12:");break;
+		case 13:OLED_ShowString(x,y,"13:");break;
+		case 14:OLED_ShowString(x,y,"14:");break;
+		case 15:OLED_ShowString(x,y,"15:");break;
+		case 16:OLED_ShowString(x,y,"16:");break;
+		case 17:OLED_ShowString(x,y,"17:");break;
+		case 18:OLED_ShowString(x,y,"18:");break;
+		case 19:OLED_ShowString(x,y,"19:");break;
+		case 20:OLED_ShowString(x,y,"20:");break;
+		case 21:OLED_ShowString(x,y,"21:");break;
+		case 22:OLED_ShowString(x,y,"22:");break;
+		case 23:OLED_ShowString(x,y,"23:");break;
+	}
+	switch(showminute)
+	{
+		case 0:OLED_ShowString(x+24,y,"00:");break;
+		case 1:OLED_ShowString(x+24,y,"01:");break;
+		case 2:OLED_ShowString(x+24,y,"02:");break;
+		case 3:OLED_ShowString(x+24,y,"03:");break;
+		case 4:OLED_ShowString(x+24,y,"04:");break;
+		case 5:OLED_ShowString(x+24,y,"05:");break;
+		case 6:OLED_ShowString(x+24,y,"06:");break;
+		case 7:OLED_ShowString(x+24,y,"07:");break;
+		case 8:OLED_ShowString(x+24,y,"08:");break;
+		case 9:OLED_ShowString(x+24,y,"09:");break;
+		case 10:OLED_ShowString(x+24,y,"10:");break;
+		case 11:OLED_ShowString(x+24,y,"11:");break;
+		case 12:OLED_ShowString(x+24,y,"12:");break;
+		case 13:OLED_ShowString(x+24,y,"13:");break;
+		case 14:OLED_ShowString(x+24,y,"14:");break;
+		case 15:OLED_ShowString(x+24,y,"15:");break;
+		case 16:OLED_ShowString(x+24,y,"16:");break;
+		case 17:OLED_ShowString(x+24,y,"17:");break;
+		case 18:OLED_ShowString(x+24,y,"18:");break;
+		case 19:OLED_ShowString(x+24,y,"19:");break;
+		case 20:OLED_ShowString(x+24,y,"20:");break;
+		case 21:OLED_ShowString(x+24,y,"21:");break;
+		case 22:OLED_ShowString(x+24,y,"22:");break;
+		case 23:OLED_ShowString(x+24,y,"23:");break;
+		case 24:OLED_ShowString(x+24,y,"24:");break;
+		case 25:OLED_ShowString(x+24,y,"25:");break;
+		case 26:OLED_ShowString(x+24,y,"26:");break;
+		case 27:OLED_ShowString(x+24,y,"27:");break;
+		case 28:OLED_ShowString(x+24,y,"28:");break;
+		case 29:OLED_ShowString(x+24,y,"29:");break;
+		case 30:OLED_ShowString(x+24,y,"30:");break;
+		case 31:OLED_ShowString(x+24,y,"31:");break;
+		case 32:OLED_ShowString(x+24,y,"32:");break;
+		case 33:OLED_ShowString(x+24,y,"33:");break;
+		case 34:OLED_ShowString(x+24,y,"34:");break;
+		case 35:OLED_ShowString(x+24,y,"35:");break;
+		case 36:OLED_ShowString(x+24,y,"36:");break;
+		case 37:OLED_ShowString(x+24,y,"37:");break;
+		case 38:OLED_ShowString(x+24,y,"38:");break;
+		case 39:OLED_ShowString(x+24,y,"39:");break;
+		case 40:OLED_ShowString(x+24,y,"40:");break;
+		case 41:OLED_ShowString(x+24,y,"41:");break;
+		case 42:OLED_ShowString(x+24,y,"42:");break;
+		case 43:OLED_ShowString(x+24,y,"43:");break;
+		case 44:OLED_ShowString(x+24,y,"44:");break;
+		case 45:OLED_ShowString(x+24,y,"45:");break;
+		case 46:OLED_ShowString(x+24,y,"46:");break;
+		case 47:OLED_ShowString(x+24,y,"47:");break;
+		case 48:OLED_ShowString(x+24,y,"48:");break;
+		case 49:OLED_ShowString(x+24,y,"49:");break;
+		case 50:OLED_ShowString(x+24,y,"50:");break;
+		case 51:OLED_ShowString(x+24,y,"51:");break;
+		case 52:OLED_ShowString(x+24,y,"52:");break;
+		case 53:OLED_ShowString(x+24,y,"53:");break;
+		case 54:OLED_ShowString(x+24,y,"54:");break;
+		case 55:OLED_ShowString(x+24,y,"55:");break;
+		case 56:OLED_ShowString(x+24,y,"56:");break;
+		case 57:OLED_ShowString(x+24,y,"57:");break;
+		case 58:OLED_ShowString(x+24,y,"58:");break;
+		case 59:OLED_ShowString(x+24,y,"59:");break;
+	}
+	switch(showsecond)
+	{
+		case 0:OLED_ShowString(x+48,y,"00");break;
+		case 1:OLED_ShowString(x+48,y,"01");break;
+		case 2:OLED_ShowString(x+48,y,"02");break;
+		case 3:OLED_ShowString(x+48,y,"03");break;
+		case 4:OLED_ShowString(x+48,y,"04");break;
+		case 5:OLED_ShowString(x+48,y,"05");break;
+		case 6:OLED_ShowString(x+48,y,"06");break;
+		case 7:OLED_ShowString(x+48,y,"07");break;
+		case 8:OLED_ShowString(x+48,y,"08");break;
+		case 9:OLED_ShowString(x+48,y,"09");break;
+		case 10:OLED_ShowString(x+48,y,"10");break;
+		case 11:OLED_ShowString(x+48,y,"11");break;
+		case 12:OLED_ShowString(x+48,y,"12");break;
+		case 13:OLED_ShowString(x+48,y,"13");break;
+		case 14:OLED_ShowString(x+48,y,"14");break;
+		case 15:OLED_ShowString(x+48,y,"15");break;
+		case 16:OLED_ShowString(x+48,y,"16");break;
+		case 17:OLED_ShowString(x+48,y,"17");break;
+		case 18:OLED_ShowString(x+48,y,"18");break;
+		case 19:OLED_ShowString(x+48,y,"19");break;
+		case 20:OLED_ShowString(x+48,y,"20");break;
+		case 21:OLED_ShowString(x+48,y,"21");break;
+		case 22:OLED_ShowString(x+48,y,"22");break;
+		case 23:OLED_ShowString(x+48,y,"23");break;
+		case 24:OLED_ShowString(x+48,y,"24");break;
+		case 25:OLED_ShowString(x+48,y,"25");break;
+		case 26:OLED_ShowString(x+48,y,"26");break;
+		case 27:OLED_ShowString(x+48,y,"27");break;
+		case 28:OLED_ShowString(x+48,y,"28");break;
+		case 29:OLED_ShowString(x+48,y,"29");break;
+		case 30:OLED_ShowString(x+48,y,"30");break;
+		case 31:OLED_ShowString(x+48,y,"31");break;
+		case 32:OLED_ShowString(x+48,y,"32");break;
+		case 33:OLED_ShowString(x+48,y,"33");break;
+		case 34:OLED_ShowString(x+48,y,"34");break;
+		case 35:OLED_ShowString(x+48,y,"35");break;
+		case 36:OLED_ShowString(x+48,y,"36");break;
+		case 37:OLED_ShowString(x+48,y,"37");break;
+		case 38:OLED_ShowString(x+48,y,"38");break;
+		case 39:OLED_ShowString(x+48,y,"39");break;
+		case 40:OLED_ShowString(x+48,y,"40");break;
+		case 41:OLED_ShowString(x+48,y,"41");break;
+		case 42:OLED_ShowString(x+48,y,"42");break;
+		case 43:OLED_ShowString(x+48,y,"43");break;
+		case 44:OLED_ShowString(x+48,y,"44");break;
+		case 45:OLED_ShowString(x+48,y,"45");break;
+		case 46:OLED_ShowString(x+48,y,"46");break;
+		case 47:OLED_ShowString(x+48,y,"47");break;
+		case 48:OLED_ShowString(x+48,y,"48");break;
+		case 49:OLED_ShowString(x+48,y,"49");break;
+		case 50:OLED_ShowString(x+48,y,"50");break;
+		case 51:OLED_ShowString(x+48,y,"51");break;
+		case 52:OLED_ShowString(x+48,y,"52");break;
+		case 53:OLED_ShowString(x+48,y,"53");break;
+		case 54:OLED_ShowString(x+48,y,"54");break;
+		case 55:OLED_ShowString(x+48,y,"55");break;
+		case 56:OLED_ShowString(x+48,y,"56");break;
+		case 57:OLED_ShowString(x+48,y,"57");break;
+		case 58:OLED_ShowString(x+48,y,"58");break;
+		case 59:OLED_ShowString(x+48,y,"59");break;
 	}
 }
 
@@ -964,9 +1160,375 @@ void Setdate(void)
 	//return false;
 }
 
+void DisplayAlarm(void)
+{
+  int status=114514;
+  int lastnumber=1;
+  bool isquit=false;
+  bool isclear=true;
+  while(1)
+  {
+    status=scan();
+	if(isclear)
+	{
+		OLED_Clear();
+		OLED_ShowString(0,0,"Please choose:");
+		OLED_ShowString(0,2,"1.");
+		OLED_ShowString(0,4,"2.");
+		OLED_ShowString(0,6,"3.");
+		for(uint8_t i=0;i<3;i++)
+		{
+			showtimesimplified(16,2,alarms[i].hour,alarms[i].minute,alarms[i].second);
+			if(alarms[i].ison)
+			OLED_ShowString(88,2,"ON");
+			else
+			OLED_ShowString(88,2,"OFF");				
+		}
+		isclear=false;
+	}
+    if(status!=114514)
+    {
+      if(lastnumber!=status)
+      {
+        switch(status)
+        {
+          case 1:
+		  case 2:
+		  case 3:DisplayAlarmSecond(status);
+		  lastnumber=status;
+		  isclear=true;
+		  break;//选中
+		  case 10://退出
+		  isquit=true;
+		  break;
+		  default:break;
+        }
+      }
+    }
+    lastnumber=status;
+    if(isquit)
+    {
+      break;
+    }
+  }
+}
+
+void DisplayAlarmSecond(int target)
+{
+	int status=114514;
+	int lastnumber=target;
+	bool isquit=false;
+	bool isclear=true;
+	while(1)
+	{
+		if(isclear)
+		{
+			OLED_Clear();
+			switch(target)
+			{
+				case 1:
+				case 2:
+				case 3:
+				showtimesimplified(0,0,alarms[target-1].hour,alarms[target-1].minute,alarms[target-1].second);
+				if(alarms[target-1].ison)
+					OLED_ShowString(72,0,"ON");
+				else
+					OLED_ShowString(72,0,"OFF");				
+				break;
+				default:break;
+			}
+			OLED_ShowString(0,2,"1.ON/OFF");
+			OLED_ShowString(0,4,"2.Set time");
+			OLED_ShowString(0,6,"3.Quit");
+			isclear=false;
+		}
+		status=scan();
+		if(status!=114514)
+		{
+			if(lastnumber!=status)
+			{
+				switch(status)
+				{
+					case 1:
+					isclear=false;
+					alarms[target-1].ison=!alarms[target-1].ison;
+					break;
+					case 2:
+					isclear=false;
+					SetAlarm(alarms[target-1]);
+					save();//caution!!!
+					case 3:isquit=true;break;
+					default:break;
+				}
+			}
+		}
+		lastnumber=status;
+		if(isquit)
+			break;
+	}
+
+}
+
+void SetAlarm(struct Alarm target)
+{
+  unsigned int yscale=0;
+	unsigned int status=114514;
+	unsigned int lastnumber=1;
+	
+	unsigned int sethour=0;
+	unsigned int setminute=0;
+	unsigned int setsecond=0;
+	unsigned int settingparameter=HOUR;
+	
+	bool iscanceled=false;
+	bool isset=false;
+	bool isbackspaced=true;
+
+	while(1)
+	{
+		if(isbackspaced)
+		{
+			OLED_Clear();
+			OLED_ShowString(0,0,"Please input:");
+			if(sethour!=0)
+			{
+				if(sethour>=10)
+				{
+					OLED_ShowNum(0,2,sethour,2,18);
+				}
+				else
+				{
+					OLED_ShowNum(0,2,sethour,1,18);
+				}
+			}
+			OLED_ShowString(16,2,":");
+			if(setminute!=0)
+			{
+				if(setminute>=10)
+				{
+					OLED_ShowNum(24,2,setminute,2,18);
+				}
+				else
+				{
+					OLED_ShowNum(24,2,setminute,1,18);
+				}
+			}
+			OLED_ShowString(40,2,":");
+			if(setsecond!=0)
+			{
+				if(setsecond>=10)
+				{
+					OLED_ShowNum(48,2,setsecond,2,18);
+				}
+				else
+				{
+					OLED_ShowNum(48,2,setsecond,1,18);
+				}
+			}
+			isbackspaced=false;
+		}
+		status=scan();
+		if(status!=114514)
+		{
+			if(status!=lastnumber)
+			{
+				switch(status)
+				{
+					case 0:
+					case 1:
+					case 2:
+					case 3:
+					case 4:
+					case 5:
+					case 6:
+					case 7:
+					case 8:
+					case 9:switch(settingparameter)
+					{
+						case HOUR:sethour=setparameter(2,sethour,status);
+						if(yscale==0||yscale==8)
+						{
+							OLED_ShowNum(yscale,2,status,1,18);
+							yscale+=8;
+						}
+						break;
+						case MINUTE:setminute=setparameter(2,setminute,status);
+						if(yscale==24||yscale==32)
+						{
+							OLED_ShowNum(yscale,2,status,1,18);
+							yscale+=8;
+						}
+						break;
+						case SECOND:setsecond=setparameter(2,setsecond,status);
+						if(yscale==48||yscale==56)
+						{
+							OLED_ShowNum(yscale,2,status,1,18);
+							yscale+=8;
+						}
+						break;
+					}break;
+					case 10:iscanceled=true;break;//取消
+					case 11:isset=true;break;//确认
+					case 12:settingparameter=HOUR;
+						if(sethour==0)
+							yscale=0;
+						else if(sethour<10)
+							yscale=8;
+						else
+							yscale=16;
+						break;//时
+					case 13:settingparameter=MINUTE;
+						if(setminute==0)
+							yscale=24;
+						else if(setminute<10)
+							yscale=32;
+						else
+							yscale=40;
+						break;//分
+					case 14:settingparameter=SECOND;
+						if(setsecond==0)
+							yscale=48;
+						else if(setsecond<10)
+							yscale=56;
+						else
+							yscale=64;
+						break;//秒
+					case 15:switch(settingparameter)
+					{
+						case HOUR:sethour/=10;
+						yscale-=8;
+						isbackspaced=true;
+						break;
+						case MINUTE:setminute/=10;
+						yscale-=8;
+						isbackspaced=true;
+						break;
+						case SECOND:setsecond/=10;
+						yscale-=8;
+						isbackspaced=true;
+						break;
+					}//退格
+					default:break;
+				}
+			}
+		}
+		lastnumber=status;
+		if(iscanceled)
+		{
+			break;
+		}
+		if(isset)
+		{
+			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
+			{
+				target.hour=sethour;
+				target.minute=setminute;
+				target.second=setsecond;
+				target.ison=true;
+				ischanged=true;
+				break;
+			}
+			else
+			{
+				OLED_Clear();
+				OLED_ShowString(0,0,"Invalid input!");
+				delay_cycles(120000000);//may cause error.
+				ischanged=true;
+				break;
+			}
+		}
+	}
+
+}
+
+void DisplayCounter(void)
+{
+  int status=114514;
+  int lastnumber=0;
+  bool isquit=false;
+  OLED_Clear();
+  OLED_ShowString(0,0,"00:00:00");
+  OLED_ShowString(6,0,"Start");
+  while(1)
+  {
+    status=scan();
+    if(status!=114514)
+    {
+      if(lastnumber!=status)
+      {
+        switch(status)
+        {
+          case 10://Start or pause
+          case 15:
+		  isquit=true;break;
+		  //clear or quit
+          default:break;
+        }
+      }
+    }
+    lastnumber=status;
+    if(isquit)
+    {
+      break;
+    }
+  }
+}
+
+bool CheckAlarm(struct Date target)
+{
+  struct Alarm comp={target.hour, target.minute,target.second,true};
+  if(CompareAlarm(alarms[0],comp)||CompareAlarm(alarms[1],comp)||CompareAlarm(alarms[2],comp))
+  	return true;
+  else
+  	return false;
+}
+
+bool CompareAlarm(struct Alarm target1,struct Alarm target2)
+{
+	if(target1.hour==target2.hour&&target1.minute==target2.minute&&target1.second==target2.second&&target1.ison==target2.ison)
+		return true;
+	else
+		return false;
+}
+
+void Beep(void)
+{
+	DL_GPIO_clearPins(BUZZER_PORT,BUZZER_SDA_PIN);
+	delay_cycles(32000000);
+	DL_GPIO_setPins(BUZZER_PORT,BUZZER_SDA_PIN);
+}
+
+struct Alarm readalarm(uint32_t address)
+{
+  for(unsigned int i=0;i<EEPROM_EMULATION_DATA_SIZE/sizeof(uint32_t);i++)
+		EEPROMEmulationBuffer[i]=0;
+	for(int i=0;(*(uint32_t *)(address+i))!=0xFFFFFFFF;i+=4)
+		EEPROMEmulationBuffer[i/4]=*(uint32_t *)(address+i);
+	struct Alarm result={EEPROMEmulationBuffer[0],EEPROMEmulationBuffer[1],EEPROMEmulationBuffer[2],EEPROMEmulationBuffer[3]};
+	return result;	
+}
+
+bool validatealarm(struct Alarm target)
+{
+  if(target.hour>=0&&target.hour<=23&&target.minute>=0&&target.minute<=59&&target.second>=0&&target.second<=59)
+    return true;
+  else
+    return false;
+}
+
+void savealarm(struct Alarm savetarget, uint32_t address)
+{
+  dataarray[0]=savetarget.hour;
+  dataarray[1]=savetarget.minute;
+  dataarray[2]=savetarget.second;
+  dataarray[3]=savetarget.ison;
+  DL_FlashCTL_unprotectSector( FLASHCTL,address, DL_FLASHCTL_REGION_SELECT_MAIN);
+	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, address, dataarray, 4, DL_FLASHCTL_REGION_SELECT_MAIN);
+}
+
 void save(struct Date savedate)
 {
-	EEPROM_TypeA_eraseAllSectors();
+	EEPROM_TypeA_eraseAllSectors();//can't be erased!
 	dataarray[0]=savedate.year;
 	dataarray[1]=savedate.month;
 	dataarray[2]=savedate.day;
@@ -1157,3 +1719,11 @@ void transmit(struct Date target)
 	DL_UART_Main_transmitDataBlocking(UART1, target.second);
 	DL_UART_Main_transmitDataBlocking(UART1, '\n');
 }
+
+/*更新预计
+1，审后面写的函数
+2，计数器和蜂鸣器配置
+3，displaysimplified通用化//done
+4，计时器配置
+5，蜂鸣器函数
+*/
