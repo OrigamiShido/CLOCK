@@ -46,13 +46,13 @@ struct Date date={2024,2,1,0,0,0};
 struct Alarm alarm2={0,0,0,false};
 struct Alarm alarm3={0,0,0,false};*/
 
-struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
-
 uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
 bool savedata=false;
+
+//struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -70,17 +70,18 @@ void save(struct Date savedate);
 struct Date read(uint8_t mode);
 bool validate(struct Date target);
 void DisplayFunctions(void);
+
 //new functions
-void SetAlarm(struct Alarm target);
+struct Alarm SetAlarm(struct Alarm target);
 void DisplayCounter(void);
-bool CheckAlarm(struct Date target);
+bool CheckAlarm(struct Date target,struct Alarm alarms[3]);
 void Beep(void);
 struct Alarm readalarm(uint32_t address);
 bool validatealarm(struct Alarm target);
 void savealarm(struct Alarm savetarget, uint32_t address);
-void DisplayAlarm(void);
+void DisplayAlarm(struct Alarm* alarms);
 void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);
-void DisplayAlarmSecond(int target);
+//struct Alarm DisplayAlarmSecond(int target,struct Alarm targetalarm);
 bool CompareAlarm(struct Alarm target1,struct Alarm target2);
 
 int main(void)
@@ -98,8 +99,8 @@ int main(void)
 	uint8_t week=9;
 	
 	struct Date breakpoint={0,0,0,0,0,0};
-	struct Alarm savealarm[3];
-
+	//struct Alarm savealarm[3];
+	struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
 	SYSCFG_DL_init();
 	//timer enabler
 	DL_TimerG_startCounter(TIMER_0_INST);
@@ -117,14 +118,14 @@ int main(void)
 		date=breakpoint;
 		date.second--;
 	}
-	for(uint8_t i=0;i<3;i++)
+	/*for(uint8_t i=0;i<3;i++)
 	{
 	  savealarm[i]=readalarm(ALARMADDRESS+4*i);
 	  if(validatealarm(savealarm[i]))
 	  {
 		alarms[i]=savealarm[i];
 	  }
-	}
+	}*/
 	while (1) 
 	{
 		week=countweek(date.year,date.month,date.day);
@@ -136,7 +137,7 @@ int main(void)
 				showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 			save(date);
 			ischanged=false;
-			if(CheckAlarm(date))
+			if(CheckAlarm(date,alarms))
 			{
 			  Beep();
 			}
@@ -214,7 +215,7 @@ int main(void)
 								{
 									case 1:
 									isclear=false;
-									DisplayAlarm();
+									DisplayAlarm(alarms);
 									break;	
 									case 2:
 									isclear=false;
@@ -1160,10 +1161,12 @@ void Setdate(void)
 	//return false;
 }
 
-void DisplayAlarm(void)
+void DisplayAlarm(struct Alarm* alarms)
 {
   int status=114514;
+  int substatus=114514;
   int lastnumber=1;
+  int sublastnumber=1;
   bool isquit=false;
   bool isclear=true;
   while(1)
@@ -1178,24 +1181,78 @@ void DisplayAlarm(void)
 		OLED_ShowString(0,6,"3.");
 		for(uint8_t i=0;i<3;i++)
 		{
-			showtimesimplified(16,2,alarms[i].hour,alarms[i].minute,alarms[i].second);
+			showtimesimplified(16,2+2*i,alarms[i].hour,alarms[i].minute,alarms[i].second);
 			if(alarms[i].ison)
-			OLED_ShowString(88,2,"ON");
+			OLED_ShowString(88,2+2*i,"ON");
 			else
-			OLED_ShowString(88,2,"OFF");				
+			OLED_ShowString(88,2+2*i,"OFF");				
 		}
 		isclear=false;
 	}
     if(status!=114514)
     {
-      if(lastnumber!=status)
+      if(lastnumber!=status&&lastnumber!=3)
       {
         switch(status)
         {
           case 1:
 		  case 2:
-		  case 3:DisplayAlarmSecond(status);
-		  lastnumber=status;
+		  case 3:
+		  	isclear=true;
+			substatus=status;
+			sublastnumber=status;
+			while(1)
+			{
+				if(isclear)
+				{
+					OLED_Clear();
+					switch(status)
+					{
+						case 1:
+						case 2:
+						case 3:
+						showtimesimplified(0,0,alarms[status-1].hour,alarms[status-1].minute,alarms[status-1].second);
+						if(alarms[status-1].ison)
+							OLED_ShowString(72,0,"ON");
+						else
+							OLED_ShowString(72,0,"OFF");				
+						break;
+						default:break;
+					}
+					OLED_ShowString(0,2,"1.ON/OFF");
+					OLED_ShowString(0,4,"2.Set time");
+					OLED_ShowString(0,6,"3.Quit");
+					isclear=false;
+				}
+				substatus=scan();
+				if(substatus!=114514)
+				{
+					if(sublastnumber!=substatus)
+					{
+						switch(substatus)
+						{
+							case 1:
+							isclear=true;
+							alarms[status-1].ison=!alarms[status-1].ison;
+							break;
+							case 2:
+							isclear=true;
+							alarms[status-1]=SetAlarm(alarms[status-1]);
+							//save();//caution!!!
+							case 3:isquit=true;break;
+							default:break;
+						}
+					}
+				}
+				sublastnumber=substatus;
+				if(isquit)
+				{
+					isquit=false;
+					break;
+				}
+			}	
+		  status=3;
+		  lastnumber=3;
 		  isclear=true;
 		  break;//选中
 		  case 10://退出
@@ -1213,12 +1270,13 @@ void DisplayAlarm(void)
   }
 }
 
-void DisplayAlarmSecond(int target)
+/*struct Alarm DisplayAlarmSecond(int target,struct Alarm targetalarm)
 {
 	int status=114514;
-	int lastnumber=target;
+	int lastnumber=2;
 	bool isquit=false;
 	bool isclear=true;
+	struct Alarm temp=targetalarm;
 	while(1)
 	{
 		if(isclear)
@@ -1229,8 +1287,8 @@ void DisplayAlarmSecond(int target)
 				case 1:
 				case 2:
 				case 3:
-				showtimesimplified(0,0,alarms[target-1].hour,alarms[target-1].minute,alarms[target-1].second);
-				if(alarms[target-1].ison)
+				showtimesimplified(0,0,temp.hour,temp.minute,temp.second);
+				if(temp.ison)
 					OLED_ShowString(72,0,"ON");
 				else
 					OLED_ShowString(72,0,"OFF");				
@@ -1250,13 +1308,13 @@ void DisplayAlarmSecond(int target)
 				switch(status)
 				{
 					case 1:
-					isclear=false;
-					alarms[target-1].ison=!alarms[target-1].ison;
+					isclear=true;
+					temp.ison=!temp.ison;
 					break;
 					case 2:
-					isclear=false;
-					SetAlarm(alarms[target-1]);
-					save();//caution!!!
+					isclear=true;
+					temp=SetAlarm(temp);
+					//save();//caution!!!
 					case 3:isquit=true;break;
 					default:break;
 				}
@@ -1266,12 +1324,12 @@ void DisplayAlarmSecond(int target)
 		if(isquit)
 			break;
 	}
+	return temp;
+}*/
 
-}
-
-void SetAlarm(struct Alarm target)
+struct Alarm SetAlarm(struct Alarm target)
 {
-  unsigned int yscale=0;
+  	unsigned int yscale=0;
 	unsigned int status=114514;
 	unsigned int lastnumber=1;
 	
@@ -1438,7 +1496,7 @@ void SetAlarm(struct Alarm target)
 			}
 		}
 	}
-
+	return target;
 }
 
 void DisplayCounter(void)
@@ -1448,7 +1506,7 @@ void DisplayCounter(void)
   bool isquit=false;
   OLED_Clear();
   OLED_ShowString(0,0,"00:00:00");
-  OLED_ShowString(6,0,"Start");
+  OLED_ShowString(0,6,"Start");
   while(1)
   {
     status=scan();
@@ -1474,7 +1532,7 @@ void DisplayCounter(void)
   }
 }
 
-bool CheckAlarm(struct Date target)
+bool CheckAlarm(struct Date target,struct Alarm alarms[3])
 {
   struct Alarm comp={target.hour, target.minute,target.second,true};
   if(CompareAlarm(alarms[0],comp)||CompareAlarm(alarms[1],comp)||CompareAlarm(alarms[2],comp))
@@ -1494,7 +1552,7 @@ bool CompareAlarm(struct Alarm target1,struct Alarm target2)
 void Beep(void)
 {
 	DL_GPIO_clearPins(BUZZER_PORT,BUZZER_SDA_PIN);
-	delay_cycles(32000000);
+	delay_cycles(64000000);
 	DL_GPIO_setPins(BUZZER_PORT,BUZZER_SDA_PIN);
 }
 
@@ -1717,6 +1775,15 @@ void transmit(struct Date target)
 	DL_UART_Main_transmitDataBlocking(UART1, target.hour);
 	DL_UART_Main_transmitDataBlocking(UART1, target.minute);
 	DL_UART_Main_transmitDataBlocking(UART1, target.second);
+	/*DL_UART_Main_transmitDataBlocking(UART1, alarms[0].hour);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[0].minute);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[0].second);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[1].hour);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[1].minute);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[1].second);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[2].hour);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[2].minute);
+	DL_UART_Main_transmitDataBlocking(UART1, alarms[2].second);*/
 	DL_UART_Main_transmitDataBlocking(UART1, '\n');
 }
 
@@ -1726,4 +1793,10 @@ void transmit(struct Date target)
 3，displaysimplified通用化//done
 4，计时器配置
 5，蜂鸣器函数
+
+目前问题
+1，闹钟会异常变动
+2，显示错误
+3，存储不灵敏
+4，闹钟设置出错，刹不住车
 */
