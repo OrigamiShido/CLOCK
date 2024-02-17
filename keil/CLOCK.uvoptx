@@ -152,34 +152,34 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>587</LineNumber>
+          <LineNumber>1675</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>17688</Address>
+          <Address>0</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
+          <BreakIfRCount>0</BreakIfRCount>
           <Filename>..\Core\src\empty.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\empty_driverlib_src_LP_MSPM0L1306_nortos_keil\../Core/src/empty.c\587</Expression>
+          <Expression></Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>1183</LineNumber>
+          <LineNumber>1678</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>4280</Address>
+          <Address>0</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
+          <BreakIfRCount>0</BreakIfRCount>
           <Filename>..\Core\src\empty.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\empty_driverlib_src_LP_MSPM0L1306_nortos_keil\../Core/src/empty.c\1183</Expression>
+          <Expression></Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -247,6 +247,21 @@
           <count>12</count>
           <WinNumber>1</WinNumber>
           <ItemText>alarm1</ItemText>
+        </Ww>
+        <Ww>
+          <count>13</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>alarms</ItemText>
+        </Ww>
+        <Ww>
+          <count>14</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>savealarm[2]</ItemText>
+        </Ww>
+        <Ww>
+          <count>15</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>dataarray</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>

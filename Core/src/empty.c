@@ -20,6 +20,43 @@
 #define ALARMADDRESS2 0x902c
 #define ALARMADDRESS3 0x9044
 
+#define C1 262
+#define C1U 277
+#define D1 294
+#define D1U 311
+#define E1 330
+#define F1 349
+#define F1U 370
+#define G1 392
+#define G1U 415
+#define A1 440
+#define A1U 466
+#define B1 494
+#define C2 523
+#define C2U 554
+#define D2 587
+#define D2U 622
+#define E2 659
+#define F2 698
+#define F2U 740
+#define G2 784
+#define G2U 831
+#define A2 880
+#define A2U 932
+#define B2 988
+#define C3 1046
+#define C3U 1109
+#define D3 1175
+#define D3U 1245
+#define E3 1318
+#define F3 1397
+#define F3U 1480
+#define G3 1568
+#define G3U 1661
+#define A3 1760
+#define A3U 1865
+#define B3 1976
+
 //OLED PARAMETER
 uint8_t TxPacket[4] = {0x90, 0x00, 0x00, 0x00};  //��������
 uint8_t RxPacket[4]={0x00, 0x00, 0x00, 0x00};   //��������
@@ -46,7 +83,7 @@ struct Date date={2024,2,1,0,0,0};
 struct Alarm alarm2={0,0,0,false};
 struct Alarm alarm3={0,0,0,false};*/
 
-uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
+//uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
@@ -66,7 +103,7 @@ void Setdate(void);
 int setparameter(int maxcount,int parameter,int number);
 struct Date judge(struct Date judgedate);
 void transmit(struct Date target);
-void save(struct Date savedate);
+void save(struct Date savedate,struct Alarm savealarm[3]);
 struct Date read(uint8_t mode);
 bool validate(struct Date target);
 void DisplayFunctions(void);
@@ -75,14 +112,15 @@ void DisplayFunctions(void);
 struct Alarm SetAlarm(struct Alarm target);
 void DisplayCounter(void);
 bool CheckAlarm(struct Date target,struct Alarm alarms[3]);
-void Beep(void);
-struct Alarm readalarm(uint32_t address);
+void Beep(struct Date target);
+struct Alarm readalarm(struct Alarm* target);
 bool validatealarm(struct Alarm target);
-void savealarm(struct Alarm savetarget, uint32_t address);
+//void savealarm(struct Alarm savetarget, uint32_t address);
 void DisplayAlarm(struct Alarm* alarms);
 void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);
 //struct Alarm DisplayAlarmSecond(int target,struct Alarm targetalarm);
 bool CompareAlarm(struct Alarm target1,struct Alarm target2);
+void Buzz(unsigned int frequency, unsigned int duration);
 
 int main(void)
 {
@@ -99,8 +137,9 @@ int main(void)
 	uint8_t week=9;
 	
 	struct Date breakpoint={0,0,0,0,0,0};
-	//struct Alarm savealarm[3];
-	struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
+	struct Alarm breakalarms[3];
+	//struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
+	struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};
 	SYSCFG_DL_init();
 	//timer enabler
 	DL_TimerG_startCounter(TIMER_0_INST);
@@ -118,14 +157,14 @@ int main(void)
 		date=breakpoint;
 		date.second--;
 	}
-	/*for(uint8_t i=0;i<3;i++)
+	for(uint8_t i=0;i<3;i++)
 	{
-	  savealarm[i]=readalarm(ALARMADDRESS+4*i);
-	  if(validatealarm(savealarm[i]))
+	  readalarm(breakalarms);
+	  if(validatealarm(breakalarms[i]))
 	  {
-		alarms[i]=savealarm[i];
+		alarms[i]=breakalarms[i];
 	  }
-	}*/
+	}
 	while (1) 
 	{
 		week=countweek(date.year,date.month,date.day);
@@ -135,11 +174,11 @@ int main(void)
 				showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
 			else
 				showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
-			save(date);
+			save(date,alarms);
 			ischanged=false;
 			if(CheckAlarm(date,alarms))
 			{
-			  Beep();
+			  Beep(date);
 			}
 		}
 		status=scan();
@@ -1549,21 +1588,47 @@ bool CompareAlarm(struct Alarm target1,struct Alarm target2)
 		return false;
 }
 
-void Beep(void)
+void Beep(struct Date target)
 {
 	DL_GPIO_clearPins(BUZZER_PORT,BUZZER_SDA_PIN);
-	delay_cycles(64000000);
+	OLED_Clear();
+	showtimesimplified(0,0,target.hour,target.minute,target.second);
+	OLED_ShowString(0,6,"Press to stop");
+	while(1)
+	{
+		Buzz(C3,200);
+		delay_cycles(3400000);
+		if(scan()!=114514)
+		{
+			break;
+		}
+	}
 	DL_GPIO_setPins(BUZZER_PORT,BUZZER_SDA_PIN);
+	OLED_Clear();
 }
 
-struct Alarm readalarm(uint32_t address)
+void Buzz(unsigned int frequency,unsigned int duration)
+{
+	unsigned int buzztime=(duration/1000.0)*frequency;
+	for(unsigned int i=0;i<buzztime;i++)
+	{
+		DL_GPIO_togglePins(BUZZER_PORT,BUZZER_SCL_PIN);
+		delay_cycles(34000000/frequency);
+	}
+	DL_GPIO_clearPins(BUZZER_PORT,BUZZER_SCL_PIN);
+	delay_cycles(3400000);
+}
+
+struct Alarm readalarm(struct Alarm* target)
 {
   for(unsigned int i=0;i<EEPROM_EMULATION_DATA_SIZE/sizeof(uint32_t);i++)
 		EEPROMEmulationBuffer[i]=0;
-	for(int i=0;(*(uint32_t *)(address+i))!=0xFFFFFFFF;i+=4)
-		EEPROMEmulationBuffer[i/4]=*(uint32_t *)(address+i);
-	struct Alarm result={EEPROMEmulationBuffer[0],EEPROMEmulationBuffer[1],EEPROMEmulationBuffer[2],EEPROMEmulationBuffer[3]};
-	return result;	
+	for(int i=0;(*(uint32_t *)(ALARMADDRESS+i))!=0xFFFFFFFF;i+=4)
+		EEPROMEmulationBuffer[i/4]=*(uint32_t *)(ALARMADDRESS+i);
+	struct Alarm result[3]={{EEPROMEmulationBuffer[0],EEPROMEmulationBuffer[1],EEPROMEmulationBuffer[2],EEPROMEmulationBuffer[3]},{EEPROMEmulationBuffer[4],EEPROMEmulationBuffer[5],EEPROMEmulationBuffer[6],EEPROMEmulationBuffer[7]},{EEPROMEmulationBuffer[8],EEPROMEmulationBuffer[9],EEPROMEmulationBuffer[10],EEPROMEmulationBuffer[11]}};
+	target[0]=result[0];
+	target[1]=result[1];
+	target[2]=result[2];
 }
 
 bool validatealarm(struct Alarm target)
@@ -1574,27 +1639,43 @@ bool validatealarm(struct Alarm target)
     return false;
 }
 
-void savealarm(struct Alarm savetarget, uint32_t address)
+/*void savealarm(struct Alarm savetarget, uint32_t address)
 {
+	uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
   dataarray[0]=savetarget.hour;
   dataarray[1]=savetarget.minute;
   dataarray[2]=savetarget.second;
   dataarray[3]=savetarget.ison;
   DL_FlashCTL_unprotectSector( FLASHCTL,address, DL_FLASHCTL_REGION_SELECT_MAIN);
 	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, address, dataarray, 4, DL_FLASHCTL_REGION_SELECT_MAIN);
-}
+}*/
 
-void save(struct Date savedate)
+void save(struct Date savedate,struct Alarm savealarm[3])
 {
-	EEPROM_TypeA_eraseAllSectors();//can't be erased!
+	uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
+	EEPROM_TypeA_eraseAllSectors();
+	for(unsigned int i=0;i<EEPROM_EMULATION_DATA_SIZE/sizeof(uint32_t);i++)
+		dataarray[i]=0;
 	dataarray[0]=savedate.year;
 	dataarray[1]=savedate.month;
 	dataarray[2]=savedate.day;
 	dataarray[3]=savedate.hour;
 	dataarray[4]=savedate.minute;
 	dataarray[5]=savedate.second;
+	dataarray[6]=savealarm[0].hour;
+	dataarray[7]=savealarm[0].minute;
+	dataarray[8]=savealarm[0].second;
+	dataarray[9]=savealarm[0].ison;
+	dataarray[10]=savealarm[1].hour;
+	dataarray[11]=savealarm[1].minute;
+	dataarray[12]=savealarm[1].second;
+	dataarray[13]=savealarm[1].ison;
+	dataarray[14]=savealarm[2].hour;
+	dataarray[15]=savealarm[2].minute;
+	dataarray[16]=savealarm[2].second;
+	dataarray[17]=savealarm[2].ison;
 	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);
-	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 6, DL_FLASHCTL_REGION_SELECT_MAIN);
+	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 18, DL_FLASHCTL_REGION_SELECT_MAIN);
 }
 
 struct Date read(uint8_t mode)
@@ -1795,8 +1876,7 @@ void transmit(struct Date target)
 5，蜂鸣器函数
 
 目前问题
-1，闹钟会异常变动
-2，显示错误
 3，存储不灵敏
-4，闹钟设置出错，刹不住车
+4，闹钟设置刹不住车
+5, 退格
 */
