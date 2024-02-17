@@ -1370,7 +1370,7 @@ struct Alarm SetAlarm(struct Alarm target)
 {
   	unsigned int yscale=0;
 	unsigned int status=114514;
-	unsigned int lastnumber=1;
+	unsigned int lastnumber=2;
 	
 	unsigned int sethour=0;
 	unsigned int setminute=0;
@@ -1870,13 +1870,11 @@ void transmit(struct Date target)
 
 /*更新预计
 1，审后面写的函数
-2，计数器和蜂鸣器配置
-3，displaysimplified通用化//done
 4，计时器配置
-5，蜂鸣器函数
 
 目前问题
 3，存储不灵敏
 4，闹钟设置刹不住车
+6, 闹钟设置会影响时间，需要断电查看
 5, 退格
 */
