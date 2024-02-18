@@ -62,34 +62,36 @@ uint8_t TxPacket[4] = {0x90, 0x00, 0x00, 0x00};  //��������
 uint8_t RxPacket[4]={0x00, 0x00, 0x00, 0x00};   //��������
 uint8_t RxTemp; //��ʱ���ݣ���ս���FIFO��
 
-struct Date{
-	uint32_t year;
-	uint8_t month;
-	uint8_t day;
+struct Time{
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
 };
 
+struct Date{
+	uint32_t year;
+	uint8_t month;
+	uint8_t day;
+	struct Time time;
+	/*uint8_t hour;
+	uint8_t minute;
+	uint8_t second;*/
+};
+
 struct Alarm{
-  uint8_t hour;
+	struct Time time;
+  /*uint8_t hour;
   uint8_t minute;
-  uint8_t second;
+  uint8_t second;*/
   bool ison;
 };
 
 struct Date date={2024,2,1,0,0,0};
-/*struct Alarm alarm1={0,0,0,false};
-struct Alarm alarm2={0,0,0,false};
-struct Alarm alarm3={0,0,0,false};*/
 
-//uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
 bool savedata=false;
-
-//struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -109,13 +111,13 @@ bool validate(struct Date target);
 void DisplayFunctions(void);
 
 //new functions
+
 struct Alarm SetAlarm(struct Alarm target);
 void DisplayCounter(void);
 bool CheckAlarm(struct Date target,struct Alarm alarms[3]);
 void Beep(struct Date target);
-struct Alarm readalarm(struct Alarm* target);
+void readalarm(struct Alarm* target);
 bool validatealarm(struct Alarm target);
-//void savealarm(struct Alarm savetarget, uint32_t address);
 void DisplayAlarm(struct Alarm* alarms);
 void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);
 //struct Alarm DisplayAlarmSecond(int target,struct Alarm targetalarm);
@@ -155,7 +157,7 @@ int main(void)
 	if(validate(breakpoint))
 	{
 		date=breakpoint;
-		date.second--;
+		date.time.second--;
 	}
 	for(uint8_t i=0;i<3;i++)
 	{
@@ -171,9 +173,9 @@ int main(void)
 		if(ischanged)
 		{
 			if(is24hour)
-				showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+				showtime(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 			else
-				showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+				showtimein12(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 			save(date,alarms);
 			ischanged=false;
 			if(CheckAlarm(date,alarms))
@@ -232,9 +234,9 @@ int main(void)
 					is24hour=!is24hour;
 					OLED_Clear();
 					if(is24hour)
-						showtime(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+						showtime(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 					else
-						showtimein12(date.hour,date.minute,date.second,date.year,date.month,date.day,week);
+						showtimein12(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 					break;
 					case 14://额外功能子菜单：闹钟，计时器
 					while(1)
@@ -293,7 +295,7 @@ int main(void)
 
 void TIMER_0_INST_IRQHandler (void){
 	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);
-	date.second++;
+	date.time.second++;
 	date=judge(date);
 	transmit(date);
 	//save(date);
@@ -302,7 +304,7 @@ void TIMER_0_INST_IRQHandler (void){
 
 bool validate(struct Date target)
 {
-	if(target.year>=0&&target.year<=9999&&target.month>=1&&target.month<=12&&target.day>=1&&target.day<=31&&target.hour>=0&&target.hour<=23&&target.minute>=0&&target.minute<=59&&target.second>=0&&target.second<=59)
+	if(target.year>=0&&target.year<=9999&&target.month>=1&&target.month<=12&&target.day>=1&&target.day<=31&&target.time.hour>=0&&target.time.hour<=23&&target.time.minute>=0&&target.time.minute<=59&&target.time.second>=0&&target.time.second<=59)
 	{
 		if((target.month==4||target.month==6||target.month==9||target.month==11)&&target.day==31)
 		{
@@ -335,19 +337,19 @@ bool validate(struct Date target)
 
 struct Date judge(struct Date judgedate)
 {
-	if(judgedate.second>=60)
+	if(judgedate.time.second>=60)
 	{
-		judgedate.second=0;
-		judgedate.minute++;
+		judgedate.time.second=0;
+		judgedate.time.minute++;
 	}
-	if(judgedate.minute>=60)
+	if(judgedate.time.minute>=60)
 	{
-		judgedate.minute=0;
-		judgedate.hour++;
+		judgedate.time.minute=0;
+		judgedate.time.hour++;
 	}
-	if(judgedate.hour>=24)
+	if(judgedate.time.hour>=24)
 	{
-		judgedate.hour=0;
+		judgedate.time.hour=0;
 		judgedate.day++;
 	}
 	switch(judgedate.day)
@@ -945,9 +947,9 @@ void Settime(void)
 		{
 			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
 			{
-				date.hour=sethour;
-				date.minute=setminute;
-				date.second=setsecond;
+				date.time.hour=sethour;
+				date.time.minute=setminute;
+				date.time.second=setsecond;
 				ischanged=true;
 				break;
 			}
@@ -1220,7 +1222,7 @@ void DisplayAlarm(struct Alarm* alarms)
 		OLED_ShowString(0,6,"3.");
 		for(uint8_t i=0;i<3;i++)
 		{
-			showtimesimplified(16,2+2*i,alarms[i].hour,alarms[i].minute,alarms[i].second);
+			showtimesimplified(16,2+2*i,alarms[i].time.hour,alarms[i].time.minute,alarms[i].time.second);
 			if(alarms[i].ison)
 			OLED_ShowString(88,2+2*i,"ON");
 			else
@@ -1250,7 +1252,7 @@ void DisplayAlarm(struct Alarm* alarms)
 						case 1:
 						case 2:
 						case 3:
-						showtimesimplified(0,0,alarms[status-1].hour,alarms[status-1].minute,alarms[status-1].second);
+						showtimesimplified(0,0,alarms[status-1].time.hour,alarms[status-1].time.minute,alarms[status-1].time.second);
 						if(alarms[status-1].ison)
 							OLED_ShowString(72,0,"ON");
 						else
@@ -1309,66 +1311,9 @@ void DisplayAlarm(struct Alarm* alarms)
   }
 }
 
-/*struct Alarm DisplayAlarmSecond(int target,struct Alarm targetalarm)
-{
-	int status=114514;
-	int lastnumber=2;
-	bool isquit=false;
-	bool isclear=true;
-	struct Alarm temp=targetalarm;
-	while(1)
-	{
-		if(isclear)
-		{
-			OLED_Clear();
-			switch(target)
-			{
-				case 1:
-				case 2:
-				case 3:
-				showtimesimplified(0,0,temp.hour,temp.minute,temp.second);
-				if(temp.ison)
-					OLED_ShowString(72,0,"ON");
-				else
-					OLED_ShowString(72,0,"OFF");				
-				break;
-				default:break;
-			}
-			OLED_ShowString(0,2,"1.ON/OFF");
-			OLED_ShowString(0,4,"2.Set time");
-			OLED_ShowString(0,6,"3.Quit");
-			isclear=false;
-		}
-		status=scan();
-		if(status!=114514)
-		{
-			if(lastnumber!=status)
-			{
-				switch(status)
-				{
-					case 1:
-					isclear=true;
-					temp.ison=!temp.ison;
-					break;
-					case 2:
-					isclear=true;
-					temp=SetAlarm(temp);
-					//save();//caution!!!
-					case 3:isquit=true;break;
-					default:break;
-				}
-			}
-		}
-		lastnumber=status;
-		if(isquit)
-			break;
-	}
-	return temp;
-}*/
-
 struct Alarm SetAlarm(struct Alarm target)
 {
-  	unsigned int yscale=0;
+  unsigned int yscale=0;
 	unsigned int status=114514;
 	unsigned int lastnumber=2;
 	
@@ -1377,9 +1322,9 @@ struct Alarm SetAlarm(struct Alarm target)
 	unsigned int setsecond=0;
 	unsigned int settingparameter=HOUR;
 	
-	bool iscanceled=false;
 	bool isset=false;
 	bool isbackspaced=true;
+	bool iscanceled=false;
 
 	while(1)
 	{
@@ -1518,9 +1463,9 @@ struct Alarm SetAlarm(struct Alarm target)
 		{
 			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
 			{
-				target.hour=sethour;
-				target.minute=setminute;
-				target.second=setsecond;
+				target.time.hour=sethour;
+				target.time.minute=setminute;
+				target.time.second=setsecond;
 				target.ison=true;
 				ischanged=true;
 				break;
@@ -1573,7 +1518,7 @@ void DisplayCounter(void)
 
 bool CheckAlarm(struct Date target,struct Alarm alarms[3])
 {
-  struct Alarm comp={target.hour, target.minute,target.second,true};
+  struct Alarm comp={target.time.hour, target.time.minute,target.time.second,true};
   if(CompareAlarm(alarms[0],comp)||CompareAlarm(alarms[1],comp)||CompareAlarm(alarms[2],comp))
   	return true;
   else
@@ -1582,7 +1527,7 @@ bool CheckAlarm(struct Date target,struct Alarm alarms[3])
 
 bool CompareAlarm(struct Alarm target1,struct Alarm target2)
 {
-	if(target1.hour==target2.hour&&target1.minute==target2.minute&&target1.second==target2.second&&target1.ison==target2.ison)
+	if(target1.time.hour==target2.time.hour&&target1.time.minute==target2.time.minute&&target1.time.second==target2.time.second&&target1.ison==target2.ison)
 		return true;
 	else
 		return false;
@@ -1592,7 +1537,7 @@ void Beep(struct Date target)
 {
 	DL_GPIO_clearPins(BUZZER_PORT,BUZZER_SDA_PIN);
 	OLED_Clear();
-	showtimesimplified(0,0,target.hour,target.minute,target.second);
+	showtimesimplified(0,0,target.time.hour,target.time.minute,target.time.second);
 	OLED_ShowString(0,6,"Press to stop");
 	while(1)
 	{
@@ -1619,7 +1564,7 @@ void Buzz(unsigned int frequency,unsigned int duration)
 	delay_cycles(3400000);
 }
 
-struct Alarm readalarm(struct Alarm* target)
+void readalarm(struct Alarm* target)
 {
   for(unsigned int i=0;i<EEPROM_EMULATION_DATA_SIZE/sizeof(uint32_t);i++)
 		EEPROMEmulationBuffer[i]=0;
@@ -1633,22 +1578,11 @@ struct Alarm readalarm(struct Alarm* target)
 
 bool validatealarm(struct Alarm target)
 {
-  if(target.hour>=0&&target.hour<=23&&target.minute>=0&&target.minute<=59&&target.second>=0&&target.second<=59)
+  if(target.time.hour>=0&&target.time.hour<=23&&target.time.minute>=0&&target.time.minute<=59&&target.time.second>=0&&target.time.second<=59)
     return true;
   else
     return false;
 }
-
-/*void savealarm(struct Alarm savetarget, uint32_t address)
-{
-	uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
-  dataarray[0]=savetarget.hour;
-  dataarray[1]=savetarget.minute;
-  dataarray[2]=savetarget.second;
-  dataarray[3]=savetarget.ison;
-  DL_FlashCTL_unprotectSector( FLASHCTL,address, DL_FLASHCTL_REGION_SELECT_MAIN);
-	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, address, dataarray, 4, DL_FLASHCTL_REGION_SELECT_MAIN);
-}*/
 
 void save(struct Date savedate,struct Alarm savealarm[3])
 {
@@ -1659,20 +1593,20 @@ void save(struct Date savedate,struct Alarm savealarm[3])
 	dataarray[0]=savedate.year;
 	dataarray[1]=savedate.month;
 	dataarray[2]=savedate.day;
-	dataarray[3]=savedate.hour;
-	dataarray[4]=savedate.minute;
-	dataarray[5]=savedate.second;
-	dataarray[6]=savealarm[0].hour;
-	dataarray[7]=savealarm[0].minute;
-	dataarray[8]=savealarm[0].second;
+	dataarray[3]=savedate.time.hour;
+	dataarray[4]=savedate.time.minute;
+	dataarray[5]=savedate.time.second;
+	dataarray[6]=savealarm[0].time.hour;
+	dataarray[7]=savealarm[0].time.minute;
+	dataarray[8]=savealarm[0].time.second;
 	dataarray[9]=savealarm[0].ison;
-	dataarray[10]=savealarm[1].hour;
-	dataarray[11]=savealarm[1].minute;
-	dataarray[12]=savealarm[1].second;
+	dataarray[10]=savealarm[1].time.hour;
+	dataarray[11]=savealarm[1].time.minute;
+	dataarray[12]=savealarm[1].time.second;
 	dataarray[13]=savealarm[1].ison;
-	dataarray[14]=savealarm[2].hour;
-	dataarray[15]=savealarm[2].minute;
-	dataarray[16]=savealarm[2].second;
+	dataarray[14]=savealarm[2].time.hour;
+	dataarray[15]=savealarm[2].time.minute;
+	dataarray[16]=savealarm[2].time.second;
 	dataarray[17]=savealarm[2].ison;
 	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);
 	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 18, DL_FLASHCTL_REGION_SELECT_MAIN);
@@ -1853,9 +1787,9 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 
 void transmit(struct Date target)
 {
-	DL_UART_Main_transmitDataBlocking(UART1, target.hour);
-	DL_UART_Main_transmitDataBlocking(UART1, target.minute);
-	DL_UART_Main_transmitDataBlocking(UART1, target.second);
+	DL_UART_Main_transmitDataBlocking(UART1, target.time.hour);
+	DL_UART_Main_transmitDataBlocking(UART1, target.time.minute);
+	DL_UART_Main_transmitDataBlocking(UART1, target.time.second);
 	/*DL_UART_Main_transmitDataBlocking(UART1, alarms[0].hour);
 	DL_UART_Main_transmitDataBlocking(UART1, alarms[0].minute);
 	DL_UART_Main_transmitDataBlocking(UART1, alarms[0].second);
@@ -1874,7 +1808,6 @@ void transmit(struct Date target)
 
 目前问题
 3，存储不灵敏
-4，闹钟设置刹不住车
 6, 闹钟设置会影响时间，需要断电查看
 5, 退格
 */
