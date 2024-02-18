@@ -85,8 +85,7 @@ struct Date date={2024,2,1,0,0,0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
-
-struct Date timer={0,0,0,0,0,0};
+bool isticked=false;
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -295,31 +294,8 @@ void TIMER_0_INST_IRQHandler (void){
 }
 
 void TIMER_1_INST_IRQHandler (void){
-	if(timer.time.second==0)
-	{
-		if(timer.time.minute==0)
-		{
-			if(timer.time.hour==0)
-			{
-				return;
-			}
-			else
-			{
-				timer.time.minute+=59;
-				timer.time.second+=59;
-				timer.time.hour--;
-			}
-		}
-		else
-		{
-			timer.time.minute--;
-			timer.time.second+=59;
-		}
-	}
-	else
-	{
-		timer.time.second--;
-	}
+	isticked=true;
+	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight2_PIN);
 }
 
 bool validate(struct Date target)
@@ -995,7 +971,7 @@ void Setdate(void)
 {
 	unsigned int yscale=0;
 	unsigned int status=114514;
-	unsigned int lastnumber=2;
+	unsigned int lastnumber=1;
 	unsigned int settingparameter=YEAR;
 	unsigned int setyear=0;
 	unsigned int setmonth=0;
@@ -1288,25 +1264,115 @@ void DisplayAlarm(struct Alarm* alarms)
 
 void DisplayCounter(void)
 {
+	struct Date timer={0,0,0,0,0,0};
   int status=114514;
   int lastnumber=0;
   bool isquit=false;
-  OLED_Clear();
-  OLED_ShowString(0,0,"00:00:00");
-  OLED_ShowString(0,6,"Start");
+  bool isstart=false;
+  bool isticking=false;
+  bool ismove=true;
+  isticked=true;
+  //OLED_ShowString(0,6,"Start");
   while(1)
   {
+	if(isticked)
+	{
+			if(timer.time.second==0)
+			{
+			if(timer.time.minute==0)
+			{
+				if(timer.time.hour==0)
+				{
+					if(isstart)
+					{
+						OLED_Clear();
+						isstart=false;
+						isticking=false;
+						DL_TimerG_stopCounter(TIMER_1_INST);
+						NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);
+						Beep(timer);
+						isticked=true;
+					}
+				}
+				else
+				{
+					timer.time.minute+=59;
+					timer.time.second+=59;
+					timer.time.hour--;
+				}
+			}
+			else
+			{
+				timer.time.minute--;
+				timer.time.second+=59;
+			}
+			}
+			else
+			{
+				timer.time.second--;
+			}
+		isticked=false;
+		ismove=true;
+	}
+	if(ismove)
+	{
+		OLED_Clear();
+		showtimesimplified(0,0,timer.time.hour,timer.time.minute,timer.time.second);
+		ismove=false;
+	}
     status=scan();
     if(status!=114514)
     {
-      if(lastnumber!=status)
+      if(lastnumber!=status&&lastnumber!=15)
       {
         switch(status)
         {
-          case 10://Start or pause
-          case 15:
-		  isquit=true;break;
-		  //clear or quit
+		case 10:  //clear or quit
+		  if(isstart)
+		  {
+			timer.time.hour=0;
+			timer.time.minute=0;
+			timer.time.second=0;
+			isstart=false;
+			isticking=false;
+			DL_TimerG_stopCounter(TIMER_1_INST);
+			NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);
+			ismove=true;
+		  }
+		  else
+		  {
+			isquit=true;
+			ischanged=true;
+		  }
+		break;
+        case 11://Start or pause
+		  if(timer.time.hour==0&&timer.time.minute==0&&timer.time.second==0)
+		  	break;
+		  else if(!isticking&&!isstart)
+		  {
+			isstart=true;
+			isticking=true;
+			DL_TimerG_startCounter(TIMER_1_INST);
+			NVIC_EnableIRQ(TIMER_1_INST_INT_IRQN);
+		  }	
+		  else if(!isticking&&isstart)
+		  {
+			DL_TimerG_startCounter(TIMER_1_INST);
+			isticking=true;
+		  }
+		  else if(isticking)
+		  {
+			isticking=false;
+			DL_TimerG_stopCounter(TIMER_1_INST);
+		  }
+		break;
+		case 15://set
+		if(!isticking)
+		{
+			timer.time=Settime(timer.time,15);
+			ismove=true;
+		}
+		break;
           default:break;
         }
       }
@@ -1610,7 +1676,7 @@ void transmit(struct Date target)
 
 /*更新预计
 1，审后面写的函数
-4，计时器配置
+4，计时器配置,4s卡一下
 5, displaycounter
 
 目前问题
