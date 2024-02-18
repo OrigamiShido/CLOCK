@@ -97,10 +97,10 @@ TIMER1.interruptPriority = "0";
 
 TIMER2.$name             = "TIMER_1";
 TIMER2.timerClkSrc       = "LFCLK";
-TIMER2.timerPeriod       = "1 ms";
 TIMER2.timerMode         = "PERIODIC";
 TIMER2.interrupts        = ["ZERO"];
 TIMER2.interruptPriority = "2";
+TIMER2.timerPeriod       = "1 s";
 
 UART1.$name                    = "UART_0";
 UART1.uartClkSrc               = "MFCLK";

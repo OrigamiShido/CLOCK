@@ -86,6 +86,7 @@ uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0
 
 bool ischanged=false;
 
+struct Date timer={0,0,0,0,0,0};
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -291,6 +292,34 @@ void TIMER_0_INST_IRQHandler (void){
 	//transmit(date);
 	//save(date);
 	ischanged=true;
+}
+
+void TIMER_1_INST_IRQHandler (void){
+	if(timer.time.second==0)
+	{
+		if(timer.time.minute==0)
+		{
+			if(timer.time.hour==0)
+			{
+				return;
+			}
+			else
+			{
+				timer.time.minute+=59;
+				timer.time.second+=59;
+				timer.time.hour--;
+			}
+		}
+		else
+		{
+			timer.time.minute--;
+			timer.time.second+=59;
+		}
+	}
+	else
+	{
+		timer.time.second--;
+	}
 }
 
 bool validate(struct Date target)
@@ -1582,6 +1611,7 @@ void transmit(struct Date target)
 /*更新预计
 1，审后面写的函数
 4，计时器配置
+5, displaycounter
 
 目前问题
 3，存储不灵敏
