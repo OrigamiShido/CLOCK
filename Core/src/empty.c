@@ -73,16 +73,10 @@ struct Date{
 	uint8_t month;
 	uint8_t day;
 	struct Time time;
-	/*uint8_t hour;
-	uint8_t minute;
-	uint8_t second;*/
 };
 
 struct Alarm{
 	struct Time time;
-  /*uint8_t hour;
-  uint8_t minute;
-  uint8_t second;*/
   bool ison;
 };
 
@@ -91,7 +85,7 @@ struct Date date={2024,2,1,0,0,0};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
-bool savedata=false;
+
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -100,7 +94,7 @@ int digitalcount(double input);
 void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
 void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
 void DisplaySettings(void);
-void Settime(void);
+struct Time Settime(struct Time original,uint8_t num);
 void Setdate(void);
 int setparameter(int maxcount,int parameter,int number);
 struct Date judge(struct Date judgedate);
@@ -111,8 +105,6 @@ bool validate(struct Date target);
 void DisplayFunctions(void);
 
 //new functions
-
-struct Alarm SetAlarm(struct Alarm target);
 void DisplayCounter(void);
 bool CheckAlarm(struct Date target,struct Alarm alarms[3]);
 void Beep(struct Date target);
@@ -120,7 +112,6 @@ void readalarm(struct Alarm* target);
 bool validatealarm(struct Alarm target);
 void DisplayAlarm(struct Alarm* alarms);
 void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);
-//struct Alarm DisplayAlarmSecond(int target,struct Alarm targetalarm);
 bool CompareAlarm(struct Alarm target1,struct Alarm target2);
 void Buzz(unsigned int frequency, unsigned int duration);
 
@@ -208,11 +199,11 @@ int main(void)
 								{
 									case 1:
 									isclear=false;
-									Settime();
+									Setdate();
 									break;	
 									case 2:
 									isclear=false;
-									Setdate();
+									date.time=Settime(date.time,2);
 									break;
 									case 3:isset=true;
 									isclear=false;
@@ -297,7 +288,7 @@ void TIMER_0_INST_IRQHandler (void){
 	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);
 	date.time.second++;
 	date=judge(date);
-	transmit(date);
+	//transmit(date);
 	//save(date);
 	ischanged=true;
 }
@@ -781,8 +772,8 @@ void DisplaySettings(void)
 {
 	OLED_Clear();
 	OLED_ShowString(0,0,"Settings");
-	OLED_ShowString(0,2,"1. Set Time");
-	OLED_ShowString(0,4,"2. Set Date");
+	OLED_ShowString(0,2,"1. Set Date");
+	OLED_ShowString(0,4,"2. Set Time");
 	OLED_ShowString(0,6,"3. Exit");
 }
 
@@ -795,11 +786,12 @@ void DisplayFunctions(void)
 	OLED_ShowString(0,6,"3. Exit");
 }
 
-void Settime(void)
+struct Time Settime(struct Time original,uint8_t num)
 {
+	struct Time result;
 	unsigned int yscale=0;
 	unsigned int status=114514;
-	unsigned int lastnumber=1;
+	unsigned int lastnumber=num;
 	
 	unsigned int sethour=0;
 	unsigned int setminute=0;
@@ -815,6 +807,7 @@ void Settime(void)
 		if(isbackspaced)
 		{
 			OLED_Clear();
+			//OLED_Init();
 			OLED_ShowString(0,0,"Please input:");
 			if(sethour!=0)
 			{
@@ -941,16 +934,18 @@ void Settime(void)
 		lastnumber=status;
 		if(iscanceled)
 		{
+			return original;
 			break;
 		}
 		if(isset)
 		{
 			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
 			{
-				date.time.hour=sethour;
-				date.time.minute=setminute;
-				date.time.second=setsecond;
+				result.hour=sethour;
+				result.minute=setminute;
+				result.second=setsecond;
 				ischanged=true;
+				return result;
 				break;
 			}
 			else
@@ -959,11 +954,12 @@ void Settime(void)
 				OLED_ShowString(0,0,"Invalid input!");
 				delay_cycles(120000000);//may cause error.
 				ischanged=true;
+				return original;
 				break;
 			}
 		}
 	}
-	//return false;
+	return original;
 }
 
 void Setdate(void)
@@ -1205,9 +1201,7 @@ void Setdate(void)
 void DisplayAlarm(struct Alarm* alarms)
 {
   int status=114514;
-  int substatus=114514;
   int lastnumber=1;
-  int sublastnumber=1;
   bool isquit=false;
   bool isclear=true;
   while(1)
@@ -1239,59 +1233,8 @@ void DisplayAlarm(struct Alarm* alarms)
           case 1:
 		  case 2:
 		  case 3:
-		  	isclear=true;
-			substatus=status;
-			sublastnumber=status;
-			while(1)
-			{
-				if(isclear)
-				{
-					OLED_Clear();
-					switch(status)
-					{
-						case 1:
-						case 2:
-						case 3:
-						showtimesimplified(0,0,alarms[status-1].time.hour,alarms[status-1].time.minute,alarms[status-1].time.second);
-						if(alarms[status-1].ison)
-							OLED_ShowString(72,0,"ON");
-						else
-							OLED_ShowString(72,0,"OFF");				
-						break;
-						default:break;
-					}
-					OLED_ShowString(0,2,"1.ON/OFF");
-					OLED_ShowString(0,4,"2.Set time");
-					OLED_ShowString(0,6,"3.Quit");
-					isclear=false;
-				}
-				substatus=scan();
-				if(substatus!=114514)
-				{
-					if(sublastnumber!=substatus)
-					{
-						switch(substatus)
-						{
-							case 1:
-							isclear=true;
-							alarms[status-1].ison=!alarms[status-1].ison;
-							break;
-							case 2:
-							isclear=true;
-							alarms[status-1]=SetAlarm(alarms[status-1]);
-							//save();//caution!!!
-							case 3:isquit=true;break;
-							default:break;
-						}
-					}
-				}
-				sublastnumber=substatus;
-				if(isquit)
-				{
-					isquit=false;
-					break;
-				}
-			}	
+		  	alarms[status-1].time=Settime(alarms[status-1].time,status);
+			alarms[status-1].ison=true;
 		  status=3;
 		  lastnumber=3;
 		  isclear=true;
@@ -1299,6 +1242,9 @@ void DisplayAlarm(struct Alarm* alarms)
 		  case 10://退出
 		  isquit=true;
 		  break;
+		  case 12:alarms[0].ison=!alarms[0].ison;isclear=true;break;
+		  case 13:alarms[1].ison=!alarms[1].ison;isclear=true;break;
+		  case 14:alarms[2].ison=!alarms[2].ison;isclear=true;break;
 		  default:break;
         }
       }
@@ -1309,178 +1255,6 @@ void DisplayAlarm(struct Alarm* alarms)
       break;
     }
   }
-}
-
-struct Alarm SetAlarm(struct Alarm target)
-{
-  unsigned int yscale=0;
-	unsigned int status=114514;
-	unsigned int lastnumber=2;
-	
-	unsigned int sethour=0;
-	unsigned int setminute=0;
-	unsigned int setsecond=0;
-	unsigned int settingparameter=HOUR;
-	
-	bool isset=false;
-	bool isbackspaced=true;
-	bool iscanceled=false;
-
-	while(1)
-	{
-		if(isbackspaced)
-		{
-			OLED_Clear();
-			OLED_ShowString(0,0,"Please input:");
-			if(sethour!=0)
-			{
-				if(sethour>=10)
-				{
-					OLED_ShowNum(0,2,sethour,2,18);
-				}
-				else
-				{
-					OLED_ShowNum(0,2,sethour,1,18);
-				}
-			}
-			OLED_ShowString(16,2,":");
-			if(setminute!=0)
-			{
-				if(setminute>=10)
-				{
-					OLED_ShowNum(24,2,setminute,2,18);
-				}
-				else
-				{
-					OLED_ShowNum(24,2,setminute,1,18);
-				}
-			}
-			OLED_ShowString(40,2,":");
-			if(setsecond!=0)
-			{
-				if(setsecond>=10)
-				{
-					OLED_ShowNum(48,2,setsecond,2,18);
-				}
-				else
-				{
-					OLED_ShowNum(48,2,setsecond,1,18);
-				}
-			}
-			isbackspaced=false;
-		}
-		status=scan();
-		if(status!=114514)
-		{
-			if(status!=lastnumber)
-			{
-				switch(status)
-				{
-					case 0:
-					case 1:
-					case 2:
-					case 3:
-					case 4:
-					case 5:
-					case 6:
-					case 7:
-					case 8:
-					case 9:switch(settingparameter)
-					{
-						case HOUR:sethour=setparameter(2,sethour,status);
-						if(yscale==0||yscale==8)
-						{
-							OLED_ShowNum(yscale,2,status,1,18);
-							yscale+=8;
-						}
-						break;
-						case MINUTE:setminute=setparameter(2,setminute,status);
-						if(yscale==24||yscale==32)
-						{
-							OLED_ShowNum(yscale,2,status,1,18);
-							yscale+=8;
-						}
-						break;
-						case SECOND:setsecond=setparameter(2,setsecond,status);
-						if(yscale==48||yscale==56)
-						{
-							OLED_ShowNum(yscale,2,status,1,18);
-							yscale+=8;
-						}
-						break;
-					}break;
-					case 10:iscanceled=true;break;//取消
-					case 11:isset=true;break;//确认
-					case 12:settingparameter=HOUR;
-						if(sethour==0)
-							yscale=0;
-						else if(sethour<10)
-							yscale=8;
-						else
-							yscale=16;
-						break;//时
-					case 13:settingparameter=MINUTE;
-						if(setminute==0)
-							yscale=24;
-						else if(setminute<10)
-							yscale=32;
-						else
-							yscale=40;
-						break;//分
-					case 14:settingparameter=SECOND;
-						if(setsecond==0)
-							yscale=48;
-						else if(setsecond<10)
-							yscale=56;
-						else
-							yscale=64;
-						break;//秒
-					case 15:switch(settingparameter)
-					{
-						case HOUR:sethour/=10;
-						yscale-=8;
-						isbackspaced=true;
-						break;
-						case MINUTE:setminute/=10;
-						yscale-=8;
-						isbackspaced=true;
-						break;
-						case SECOND:setsecond/=10;
-						yscale-=8;
-						isbackspaced=true;
-						break;
-					}//退格
-					default:break;
-				}
-			}
-		}
-		lastnumber=status;
-		if(iscanceled)
-		{
-			break;
-		}
-		if(isset)
-		{
-			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
-			{
-				target.time.hour=sethour;
-				target.time.minute=setminute;
-				target.time.second=setsecond;
-				target.ison=true;
-				ischanged=true;
-				break;
-			}
-			else
-			{
-				OLED_Clear();
-				OLED_ShowString(0,0,"Invalid input!");
-				delay_cycles(120000000);//may cause error.
-				ischanged=true;
-				break;
-			}
-		}
-	}
-	return target;
 }
 
 void DisplayCounter(void)
@@ -1609,6 +1383,7 @@ void save(struct Date savedate,struct Alarm savealarm[3])
 	dataarray[16]=savealarm[2].time.second;
 	dataarray[17]=savealarm[2].ison;
 	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);
+	// DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 6, DL_FLASHCTL_REGION_SELECT_MAIN);
 	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 18, DL_FLASHCTL_REGION_SELECT_MAIN);
 }
 
@@ -1787,6 +1562,8 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 
 void transmit(struct Date target)
 {
+	DL_UART_Main_transmitDataBlocking(UART1, target.month);
+	DL_UART_Main_transmitDataBlocking(UART1, target.day);
 	DL_UART_Main_transmitDataBlocking(UART1, target.time.hour);
 	DL_UART_Main_transmitDataBlocking(UART1, target.time.minute);
 	DL_UART_Main_transmitDataBlocking(UART1, target.time.second);
@@ -1808,6 +1585,7 @@ void transmit(struct Date target)
 
 目前问题
 3，存储不灵敏
+7, 闹钟不灵敏
 6, 闹钟设置会影响时间，需要断电查看
 5, 退格
 */
