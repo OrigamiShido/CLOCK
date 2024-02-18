@@ -176,6 +176,9 @@ extern "C" {
 /* Defines for SCL: GPIOA.15 with pinCMx 16 on package pin 19 */
 #define BUZZER_SCL_PIN                                          (DL_GPIO_PIN_15)
 #define BUZZER_SCL_IOMUX                                         (IOMUX_PINCM16)
+/* Defines for LEDlight2: GPIOA.3 with pinCMx 4 on package pin 7 */
+#define LEDLIGHTS_LEDlight2_PIN                                  (DL_GPIO_PIN_3)
+#define LEDLIGHTS_LEDlight2_IOMUX                                 (IOMUX_PINCM4)
 
 /* clang-format on */
 

@@ -74,9 +74,13 @@ GPIO2.associatedPins[7].interruptEn = true;
 GPIO2.associatedPins[7].polarity    = "FALL";
 
 GPIO3.$name                          = "LEDLIGHTS";
+GPIO3.associatedPins.create(2);
 GPIO3.associatedPins[0].$name        = "LEDlight";
 GPIO3.associatedPins[0].initialValue = "SET";
 GPIO3.associatedPins[0].assignedPin  = "9";
+GPIO3.associatedPins[1].$name        = "LEDlight2";
+GPIO3.associatedPins[1].initialValue = "SET";
+GPIO3.associatedPins[1].assignedPin  = "3";
 
 GPIO4.$name                          = "BUZZER";
 GPIO4.associatedPins.create(2);
@@ -133,6 +137,7 @@ GPIO2.associatedPins[5].pin.$suggestSolution = "PA1";
 GPIO2.associatedPins[6].pin.$suggestSolution = "PA7";
 GPIO2.associatedPins[7].pin.$suggestSolution = "PA12";
 GPIO3.associatedPins[0].pin.$suggestSolution = "PA9";
+GPIO3.associatedPins[1].pin.$suggestSolution = "PA3";
 GPIO4.associatedPins[0].pin.$suggestSolution = "PA16";
 GPIO4.associatedPins[1].pin.$suggestSolution = "PA15";
 SYSCTL.peripheral.$suggestSolution           = "SYSCTL";
