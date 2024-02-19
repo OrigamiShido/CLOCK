@@ -53,6 +53,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     SYSCFG_DL_TIMER_0_init();
     SYSCFG_DL_TIMER_1_init();
     SYSCFG_DL_UART_0_init();
+    SYSCFG_DL_TIMER_Cross_Trigger_init();
 }
 
 SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
@@ -76,8 +77,6 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
         GPIO_UART_0_IOMUX_TX, GPIO_UART_0_IOMUX_TX_FUNC);
     DL_GPIO_initPeripheralInputFunction(
         GPIO_UART_0_IOMUX_RX, GPIO_UART_0_IOMUX_RX_FUNC);
-
-    DL_GPIO_initDigitalOutput(LEDLIGHTS_LEDlight_IOMUX);
 
     DL_GPIO_initDigitalOutput(GPIO_GRP_0_CS_IOMUX);
 
@@ -105,11 +104,13 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 
     DL_GPIO_initDigitalInput(MATRIX_H4_IOMUX);
 
+    DL_GPIO_initDigitalOutput(LEDLIGHTS_LEDlight_IOMUX);
+
+    DL_GPIO_initDigitalOutput(LEDLIGHTS_LEDlight2_IOMUX);
+
     DL_GPIO_initDigitalOutput(BUZZER_SDA_IOMUX);
 
     DL_GPIO_initDigitalOutput(BUZZER_SCL_IOMUX);
-
-    DL_GPIO_initDigitalOutput(LEDLIGHTS_LEDlight2_IOMUX);
 
     DL_GPIO_clearPins(GPIOA, GPIO_GRP_0_LED_PIN |
 		GPIO_GRP_0_D0_PIN |
@@ -120,12 +121,11 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		MATRIX_V3_PIN |
 		MATRIX_V4_PIN |
 		BUZZER_SCL_PIN);
-    DL_GPIO_setPins(GPIOA, LEDLIGHTS_LEDlight_PIN |
-		GPIO_GRP_0_CS_PIN |
-		BUZZER_SDA_PIN |
-		LEDLIGHTS_LEDlight2_PIN);
-    DL_GPIO_enableOutput(GPIOA, LEDLIGHTS_LEDlight_PIN |
-		GPIO_GRP_0_CS_PIN |
+    DL_GPIO_setPins(GPIOA, GPIO_GRP_0_CS_PIN |
+		LEDLIGHTS_LEDlight_PIN |
+		LEDLIGHTS_LEDlight2_PIN |
+		BUZZER_SDA_PIN);
+    DL_GPIO_enableOutput(GPIOA, GPIO_GRP_0_CS_PIN |
 		GPIO_GRP_0_LED_PIN |
 		GPIO_GRP_0_D0_PIN |
 		GPIO_GRP_0_D1_PIN |
@@ -134,9 +134,10 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		MATRIX_V2_PIN |
 		MATRIX_V3_PIN |
 		MATRIX_V4_PIN |
+		LEDLIGHTS_LEDlight_PIN |
+		LEDLIGHTS_LEDlight2_PIN |
 		BUZZER_SDA_PIN |
-		BUZZER_SCL_PIN |
-		LEDLIGHTS_LEDlight2_PIN);
+		BUZZER_SCL_PIN);
     DL_GPIO_setLowerPinsPolarity(GPIOA, DL_GPIO_PIN_0_EDGE_FALL |
 		DL_GPIO_PIN_1_EDGE_FALL |
 		DL_GPIO_PIN_7_EDGE_FALL |
@@ -185,7 +186,7 @@ static const DL_TimerG_ClockConfig gTIMER_0ClockConfig = {
 static const DL_TimerG_TimerConfig gTIMER_0TimerConfig = {
     .period     = TIMER_0_INST_LOAD_VALUE,
     .timerMode  = DL_TIMER_TIMER_MODE_PERIODIC,
-    .startTimer = DL_TIMER_STOP,
+    .startTimer = DL_TIMER_START,
 };
 
 SYSCONFIG_WEAK void SYSCFG_DL_TIMER_0_init(void) {
@@ -202,6 +203,16 @@ SYSCONFIG_WEAK void SYSCFG_DL_TIMER_0_init(void) {
 
 
 
+     /* DL_TIMER_CROSS_TRIG_SRC is a Don't Care field when Cross Trigger Source is set to Software */
+    DL_TimerG_configCrossTrigger(TIMER_0_INST, DL_TIMER_CROSS_TRIG_SRC_FSUB0,
+	DL_TIMER_CROSS_TRIGGER_INPUT_DISABLED, DL_TIMER_CROSS_TRIGGER_MODE_ENABLED
+		);
+    /*
+     * Determines the external triggering event to trigger the module (self-triggered in main configuration)
+     * and triggered by specific timer in secondary configuration
+     */
+    DL_TimerG_setExternalTriggerEvent(TIMER_0_INST,DL_TIMER_EXT_TRIG_SEL_TRIG_1);
+    DL_TimerG_enableExternalTrigger(TIMER_0_INST);
 }
 
 /*
@@ -222,7 +233,7 @@ static const DL_TimerG_ClockConfig gTIMER_1ClockConfig = {
 static const DL_TimerG_TimerConfig gTIMER_1TimerConfig = {
     .period     = TIMER_1_INST_LOAD_VALUE,
     .timerMode  = DL_TIMER_TIMER_MODE_PERIODIC,
-    .startTimer = DL_TIMER_STOP,
+    .startTimer = DL_TIMER_START,
 };
 
 SYSCONFIG_WEAK void SYSCFG_DL_TIMER_1_init(void) {
@@ -233,14 +244,28 @@ SYSCONFIG_WEAK void SYSCFG_DL_TIMER_1_init(void) {
     DL_TimerG_initTimerMode(TIMER_1_INST,
         (DL_TimerG_TimerConfig *) &gTIMER_1TimerConfig);
     DL_TimerG_enableInterrupt(TIMER_1_INST , DL_TIMERG_INTERRUPT_ZERO_EVENT);
-	NVIC_SetPriority(TIMER_1_INST_INT_IRQN, 2);
+	NVIC_SetPriority(TIMER_1_INST_INT_IRQN, 0);
     DL_TimerG_enableClock(TIMER_1_INST);
 
 
 
 
+     /* DL_TIMER_CROSS_TRIG_SRC is a Don't Care field when Cross Trigger Source is set to Software */
+    DL_TimerG_configCrossTrigger(TIMER_1_INST, DL_TIMER_CROSS_TRIG_SRC_FSUB0,
+	DL_TIMER_CROSS_TRIGGER_INPUT_DISABLED, DL_TIMER_CROSS_TRIGGER_MODE_ENABLED
+		);
+    /*
+     * Determines the external triggering event to trigger the module (self-triggered in main configuration)
+     * and triggered by specific timer in secondary configuration
+     */
+    DL_TimerG_setExternalTriggerEvent(TIMER_1_INST,DL_TIMER_EXT_TRIG_SEL_TRIG_0);
+    DL_TimerG_enableExternalTrigger(TIMER_1_INST);
 }
 
+SYSCONFIG_WEAK void SYSCFG_DL_TIMER_Cross_Trigger_init(void) {
+    DL_TimerG_generateCrossTrigger(TIMER_0_INST);
+    DL_TimerG_generateCrossTrigger(TIMER_1_INST);
+}
 
 
 static const DL_UART_Main_ClockConfig gUART_0ClockConfig = {

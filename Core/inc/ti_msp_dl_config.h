@@ -109,12 +109,6 @@ extern "C" {
 
 
 
-/* Port definition for Pin Group LEDLIGHTS */
-#define LEDLIGHTS_PORT                                                   (GPIOA)
-
-/* Defines for LEDlight: GPIOA.9 with pinCMx 10 on package pin 13 */
-#define LEDLIGHTS_LEDlight_PIN                                   (DL_GPIO_PIN_9)
-#define LEDLIGHTS_LEDlight_IOMUX                                 (IOMUX_PINCM10)
 /* Port definition for Pin Group GPIO_GRP_0 */
 #define GPIO_GRP_0_PORT                                                  (GPIOA)
 
@@ -167,6 +161,15 @@ extern "C" {
 #define MATRIX_H4_IIDX                                      (DL_GPIO_IIDX_DIO12)
 #define MATRIX_H4_PIN                                           (DL_GPIO_PIN_12)
 #define MATRIX_H4_IOMUX                                          (IOMUX_PINCM13)
+/* Port definition for Pin Group LEDLIGHTS */
+#define LEDLIGHTS_PORT                                                   (GPIOA)
+
+/* Defines for LEDlight: GPIOA.9 with pinCMx 10 on package pin 13 */
+#define LEDLIGHTS_LEDlight_PIN                                   (DL_GPIO_PIN_9)
+#define LEDLIGHTS_LEDlight_IOMUX                                 (IOMUX_PINCM10)
+/* Defines for LEDlight2: GPIOA.3 with pinCMx 4 on package pin 7 */
+#define LEDLIGHTS_LEDlight2_PIN                                  (DL_GPIO_PIN_3)
+#define LEDLIGHTS_LEDlight2_IOMUX                                 (IOMUX_PINCM4)
 /* Port definition for Pin Group BUZZER */
 #define BUZZER_PORT                                                      (GPIOA)
 
@@ -176,9 +179,6 @@ extern "C" {
 /* Defines for SCL: GPIOA.15 with pinCMx 16 on package pin 19 */
 #define BUZZER_SCL_PIN                                          (DL_GPIO_PIN_15)
 #define BUZZER_SCL_IOMUX                                         (IOMUX_PINCM16)
-/* Defines for LEDlight2: GPIOA.3 with pinCMx 4 on package pin 7 */
-#define LEDLIGHTS_LEDlight2_PIN                                  (DL_GPIO_PIN_3)
-#define LEDLIGHTS_LEDlight2_IOMUX                                 (IOMUX_PINCM4)
 
 /* clang-format on */
 
@@ -188,6 +188,7 @@ void SYSCFG_DL_GPIO_init(void);
 void SYSCFG_DL_SYSCTL_init(void);
 void SYSCFG_DL_TIMER_0_init(void);
 void SYSCFG_DL_TIMER_1_init(void);
+void SYSCFG_DL_TIMER_Cross_Trigger_init(void);
 void SYSCFG_DL_UART_0_init(void);
 
 

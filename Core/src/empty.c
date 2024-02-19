@@ -87,6 +87,8 @@ uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0
 bool ischanged=false;
 bool isticked=false;
 uint8_t timersecond=60;
+uint8_t timerminute=60;
+uint8_t timerhour=24;
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -99,7 +101,6 @@ struct Time Settime(struct Time original,uint8_t num);
 void Setdate(void);
 int setparameter(int maxcount,int parameter,int number);
 struct Date judge(struct Date judgedate);
-void transmit(struct Date target);
 void save(struct Date savedate,struct Alarm savealarm[3]);
 struct Date read(uint8_t mode);
 bool validate(struct Date target);
@@ -296,11 +297,25 @@ void TIMER_0_INST_IRQHandler (void){
 }
 
 void TIMER_1_INST_IRQHandler (void){
+	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight2_PIN);
 	isticked=true;
 	if(timersecond==0)
+	{	
+		if(timerminute==0)
+		{
+			if(timerhour==0)
+			{
+				return;
+			}
+			else
+			{
+				timerhour--;
+				timerminute+=59;
+			}
+		}
 		timersecond+=60;
+	}
 	timersecond--;
-	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight2_PIN);
 }
 
 bool validate(struct Date target)
@@ -1283,6 +1298,8 @@ void DisplayCounter(void)
 	if(isticked)
 	{
 		timer.time.second=timersecond;
+		timer.time.minute=timerminute;
+		timer.time.hour=timerhour;
 		if(timer.time.hour==0&&timer.time.minute==0&&timer.time.second==0)
 		{	
 			OLED_Clear();
@@ -1293,7 +1310,7 @@ void DisplayCounter(void)
 			Beep(timer);
 			ismove=true;
 		}
-		if(timer.time.second==0)
+		/*if(timer.time.second==0)
 		{
 			timersecond+=60;
 		}
@@ -1308,7 +1325,7 @@ void DisplayCounter(void)
 				timer.time.hour--;
 				timer.time.minute+=59;
 			}
-		}
+		}*/
 		//isticked=false;
 		//ismove=true;
 	}
@@ -1374,6 +1391,8 @@ void DisplayCounter(void)
 		{
 			timer.time=Settime(timer.time,15);
 			timersecond=timer.time.second;
+			timerminute=timer.time.minute;
+			timerhour=timer.time.hour;
 			ismove=true;
 		}
 		break;
@@ -1623,7 +1642,7 @@ int debunce(uint32_t inputpin, uint32_t control)
 	if(!control){
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 	{
-	for(uint32_t i=0;i<=20000;i++){}
+	delay_cycles(800000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 		return 1;
 	else 
@@ -1633,10 +1652,10 @@ int debunce(uint32_t inputpin, uint32_t control)
 }
 	
 	else {
-		for(uint32_t i=0;i<=10000;i++){}
+		delay_cycles(800000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 	{
-	for(uint32_t i=0;i<=20000;i++){}
+	delay_cycles(800000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 		return 1;
 	else 
@@ -1657,23 +1676,6 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 		tempyear--;
 	}
 	return (tempday+2*tempmonth+3*(tempmonth+1)/5+tempyear+tempyear/4-tempyear/100+tempyear/400)%7;
-}
-
-void transmit(struct Date target)
-{
-	DL_UART_Main_transmitDataBlocking(UART1, target.time.hour);
-	DL_UART_Main_transmitDataBlocking(UART1, target.time.minute);
-	DL_UART_Main_transmitDataBlocking(UART1, target.time.second);
-	/*DL_UART_Main_transmitDataBlocking(UART1, alarms[0].hour);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[0].minute);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[0].second);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[1].hour);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[1].minute);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[1].second);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[2].hour);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[2].minute);
-	DL_UART_Main_transmitDataBlocking(UART1, alarms[2].second);*/
-	DL_UART_Main_transmitDataBlocking(UART1, '\n');
 }
 
 /*更新预计
