@@ -87,7 +87,6 @@ uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0
 bool ischanged=false;
 bool isticked=false;
 uint8_t timersecond=60;
-struct Time timer={0,0,0};
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
