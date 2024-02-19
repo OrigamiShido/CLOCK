@@ -87,6 +87,7 @@ uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0
 bool ischanged=false;
 bool isticked=false;
 uint8_t timersecond=60;
+struct Time timer={0,0,0};
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -271,7 +272,8 @@ int main(void)
 					}
 					break;
 					case 15:
-					EEPROM_TypeA_eraseAllSectors();
+						isclear=false;
+						DisplayCounter();
 					break;
 					defualt:break;
 				}
@@ -921,7 +923,7 @@ struct Time Settime(struct Time original,uint8_t num)
 						else
 							yscale=64;
 						break;//秒
-					case 15:switch(settingparameter)
+					case 15:/*switch(settingparameter)
 					{
 						case HOUR:sethour/=10;
 						yscale-=8;
@@ -935,7 +937,7 @@ struct Time Settime(struct Time original,uint8_t num)
 						yscale-=8;
 						isbackspaced=true;
 						break;
-					}//退格
+					}//退格*/
 					default:break;
 				}
 			}
@@ -1270,7 +1272,7 @@ void DisplayCounter(void)
 {
 	struct Date timer={0,0,0,0,0,0};
   int status=114514;
-  int lastnumber=0;
+  int lastnumber=15;
   bool isquit=false;
   bool isstart=false;
   bool isticking=false;
@@ -1309,7 +1311,7 @@ void DisplayCounter(void)
 			}
 		}
 		//isticked=false;
-		ismove=true;
+		//ismove=true;
 	}
 	if(isticked)
 	{
@@ -1660,8 +1662,6 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 
 void transmit(struct Date target)
 {
-	DL_UART_Main_transmitDataBlocking(UART1, target.month);
-	DL_UART_Main_transmitDataBlocking(UART1, target.day);
 	DL_UART_Main_transmitDataBlocking(UART1, target.time.hour);
 	DL_UART_Main_transmitDataBlocking(UART1, target.time.minute);
 	DL_UART_Main_transmitDataBlocking(UART1, target.time.second);
