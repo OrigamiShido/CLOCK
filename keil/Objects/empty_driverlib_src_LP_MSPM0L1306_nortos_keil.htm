@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\empty_driverlib_src_LP_MSPM0L1306_nortos_keil.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\empty_driverlib_src_LP_MSPM0L1306_nortos_keil.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6210000: Last Updated: Sun Feb 18 17:31:22 2024
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6210000: Last Updated: Mon Feb 19 09:22:51 2024
 <BR><P>
 <H3>Maximum Stack Usage =        484 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -584,8 +584,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[1d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[63]"></a>DisplayCounter</STRONG> (Thumb, 632 bytes, Stack size 72 bytes, empty.o(.text.DisplayCounter))
-<BR><BR>[Stack]<UL><LI>Max Depth = 312<LI>Call Chain = DisplayCounter &rArr; Settime &rArr; OLED_ShowNum &rArr; OLED_ShowChar &rArr; OLED_Set_Pos &rArr; OLED_WR_Byte &rArr; DL_GPIO_clearPins
+<P><STRONG><a name="[63]"></a>DisplayCounter</STRONG> (Thumb, 692 bytes, Stack size 80 bytes, empty.o(.text.DisplayCounter))
+<BR><BR>[Stack]<UL><LI>Max Depth = 320<LI>Call Chain = DisplayCounter &rArr; Settime &rArr; OLED_ShowNum &rArr; OLED_ShowChar &rArr; OLED_Set_Pos &rArr; OLED_WR_Byte &rArr; DL_GPIO_clearPins
 </UL>
 <BR>[Calls]<UL><LI><a href="#[34]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;showtimesimplified
 <LI><a href="#[62]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Settime
@@ -625,6 +625,7 @@ Global Symbols
 <LI><a href="#[4f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DL_FlashCTL_unprotectSector
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;save
+<LI><a href="#[1d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
 <P><STRONG><a name="[33]"></a>OLED_Clear</STRONG> (Thumb, 106 bytes, Stack size 24 bytes, oled.o(.text.OLED_Clear))
@@ -838,7 +839,7 @@ Global Symbols
 <LI><a href="#[1d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[d]"></a>TIMG0_IRQHandler</STRONG> (Thumb, 20 bytes, Stack size 8 bytes, empty.o(.text.TIMG0_IRQHandler))
+<P><STRONG><a name="[d]"></a>TIMG0_IRQHandler</STRONG> (Thumb, 48 bytes, Stack size 8 bytes, empty.o(.text.TIMG0_IRQHandler))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = TIMG0_IRQHandler &rArr; DL_GPIO_togglePins
 </UL>
 <BR>[Calls]<UL><LI><a href="#[3d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DL_GPIO_togglePins
@@ -892,10 +893,11 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;TIMG1_IRQHandler
 </UL>
 
-<P><STRONG><a name="[1d]"></a>main</STRONG> (Thumb, 948 bytes, Stack size 160 bytes, empty.o(.text.main))
+<P><STRONG><a name="[1d]"></a>main</STRONG> (Thumb, 940 bytes, Stack size 160 bytes, empty.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 484<LI>Call Chain = main &rArr; save &rArr; DL_FlashCTL_programMemoryFromRAM &rArr; DL_FlashCTL_unprotectSector &rArr; DL_FlashCTL_getFlashSectorNumberInBank &rArr; DL_FactoryRegion_getMAINFlashSize &rArr; DL_CORE_configInstruction
 </UL>
-<BR>[Calls]<UL><LI><a href="#[63]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DisplayCounter
+<BR>[Calls]<UL><LI><a href="#[6a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;EEPROM_TypeA_eraseAllSectors
+<LI><a href="#[63]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DisplayCounter
 <LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DisplayAlarm
 <LI><a href="#[68]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DisplayFunctions
 <LI><a href="#[62]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Settime

@@ -86,6 +86,7 @@ uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0
 
 bool ischanged=false;
 bool isticked=false;
+uint8_t timersecond=60;
 
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
@@ -295,6 +296,9 @@ void TIMER_0_INST_IRQHandler (void){
 
 void TIMER_1_INST_IRQHandler (void){
 	isticked=true;
+	if(timersecond==0)
+		timersecond+=60;
+	timersecond--;
 	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight2_PIN);
 }
 
@@ -1271,48 +1275,46 @@ void DisplayCounter(void)
   bool isstart=false;
   bool isticking=false;
   bool ismove=true;
-  isticked=true;
+  isticked=false;
   //OLED_ShowString(0,6,"Start");
   while(1)
   {
 	if(isticked)
 	{
-			if(timer.time.second==0)
-			{
-			if(timer.time.minute==0)
-			{
-				if(timer.time.hour==0)
-				{
-					if(isstart)
-					{
-						OLED_Clear();
-						isstart=false;
-						isticking=false;
-						DL_TimerG_stopCounter(TIMER_1_INST);
-						NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);
-						Beep(timer);
-						isticked=true;
-					}
-				}
-				else
-				{
-					timer.time.minute+=59;
-					timer.time.second+=59;
-					timer.time.hour--;
-				}
-			}
-			else
+		timer.time.second=timersecond;
+		if(timer.time.hour==0&&timer.time.minute==0&&timer.time.second==0)
+		{	
+			OLED_Clear();
+			isstart=false;
+			isticking=false;
+			DL_TimerG_stopCounter(TIMER_1_INST);
+			NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);
+			Beep(timer);
+			ismove=true;
+		}
+		if(timer.time.second==0)
+		{
+			timersecond+=60;
+		}
+		if(timer.time.second==59)
+		{
+			if(timer.time.minute!=0)
 			{
 				timer.time.minute--;
-				timer.time.second+=59;
 			}
-			}
-			else
+			else if(timer.time.hour!=0)
 			{
-				timer.time.second--;
+				timer.time.hour--;
+				timer.time.minute+=59;
 			}
-		isticked=false;
+		}
+		//isticked=false;
 		ismove=true;
+	}
+	if(isticked)
+	{
+		showtimesimplified(0,0,timer.time.hour,timer.time.minute,timer.time.second);
+		isticked=false;
 	}
 	if(ismove)
 	{
@@ -1370,6 +1372,7 @@ void DisplayCounter(void)
 		if(!isticking)
 		{
 			timer.time=Settime(timer.time,15);
+			timersecond=timer.time.second;
 			ismove=true;
 		}
 		break;
@@ -1684,4 +1687,7 @@ void transmit(struct Date target)
 7, 闹钟不灵敏
 6, 闹钟设置会影响时间，需要断电查看
 5, 退格
+
+想法
+把秒独立出来
 */
