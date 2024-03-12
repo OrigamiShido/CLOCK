@@ -108,7 +108,6 @@ TIMER2.interrupts        = ["ZERO"];
 TIMER2.interruptPriority = "0";
 TIMER2.timerPeriod       = "1 s";
 TIMER2.crossTriggerEn    = true;
-TIMER2.timerStartTimer   = true;
 
 UART1.$name                    = "UART_0";
 UART1.uartClkSrc               = "MFCLK";

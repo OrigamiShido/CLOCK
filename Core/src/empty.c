@@ -292,7 +292,6 @@ void TIMER_0_INST_IRQHandler (void){
 	date.time.second++;
 	date=judge(date);
 	//transmit(date);
-	//save(date);
 	ischanged=true;
 }
 
@@ -310,10 +309,11 @@ void TIMER_1_INST_IRQHandler (void){
 			else
 			{
 				timerhour--;
-				timerminute+=59;
+				timerminute+=60;
 			}
 		}
 		timersecond+=60;
+		timerminute--;
 	}
 	timersecond--;
 }
@@ -1329,9 +1329,9 @@ void DisplayCounter(void)
 		//isticked=false;
 		//ismove=true;
 	}
-	if(isticked)
+	if(isticking)
 	{
-		showtimesimplified(0,0,timer.time.hour,timer.time.minute,timer.time.second);
+		showtimesimplified(0,0,timerhour,timerminute,timersecond);
 		isticked=false;
 	}
 	if(ismove)
@@ -1501,8 +1501,9 @@ void save(struct Date savedate,struct Alarm savealarm[3])
 	dataarray[16]=savealarm[2].time.second;
 	dataarray[17]=savealarm[2].ison;
 	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);
-	// DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 6, DL_FLASHCTL_REGION_SELECT_MAIN);
 	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 18, DL_FLASHCTL_REGION_SELECT_MAIN);
+	// DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 6, DL_FLASHCTL_REGION_SELECT_MAIN);
+
 }
 
 struct Date read(uint8_t mode)
@@ -1652,10 +1653,10 @@ int debunce(uint32_t inputpin, uint32_t control)
 }
 	
 	else {
-		delay_cycles(800000);
+		delay_cycles(1600000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 	{
-	delay_cycles(800000);
+	delay_cycles(1600000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 		return 1;
 	else 
@@ -1679,16 +1680,10 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 }
 
 /*更新预计
-1，审后面写的函数
 4，计时器配置,4s卡一下
-5, displaycounter
+6,debunce to bool
 
 目前问题
 3，存储不灵敏
-7, 闹钟不灵敏
-6, 闹钟设置会影响时间，需要断电查看
 5, 退格
-
-想法
-把秒独立出来
 */

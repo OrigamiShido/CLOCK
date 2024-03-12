@@ -233,7 +233,7 @@ static const DL_TimerG_ClockConfig gTIMER_1ClockConfig = {
 static const DL_TimerG_TimerConfig gTIMER_1TimerConfig = {
     .period     = TIMER_1_INST_LOAD_VALUE,
     .timerMode  = DL_TIMER_TIMER_MODE_PERIODIC,
-    .startTimer = DL_TIMER_START,
+    .startTimer = DL_TIMER_STOP,
 };
 
 SYSCONFIG_WEAK void SYSCFG_DL_TIMER_1_init(void) {
@@ -264,7 +264,6 @@ SYSCONFIG_WEAK void SYSCFG_DL_TIMER_1_init(void) {
 
 SYSCONFIG_WEAK void SYSCFG_DL_TIMER_Cross_Trigger_init(void) {
     DL_TimerG_generateCrossTrigger(TIMER_0_INST);
-    DL_TimerG_generateCrossTrigger(TIMER_1_INST);
 }
 
 
