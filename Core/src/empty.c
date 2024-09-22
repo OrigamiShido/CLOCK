@@ -62,6 +62,8 @@ uint8_t TxPacket[4] = {0x90, 0x00, 0x00, 0x00};  //��������
 uint8_t RxPacket[4]={0x00, 0x00, 0x00, 0x00};   //��������
 uint8_t RxTemp; //��ʱ���ݣ���ս���FIFO��
 
+uint8_t data=0;
+
 struct Time{
 	uint8_t hour;
 	uint8_t minute;
@@ -117,6 +119,8 @@ void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_
 bool CompareAlarm(struct Alarm target1,struct Alarm target2);
 void Buzz(unsigned int frequency, unsigned int duration);
 
+void transmittophone(float curve ,float thd, float u[5]);
+
 int main(void)
 {
 	//VARIABLES
@@ -139,6 +143,8 @@ int main(void)
 	//timer enabler
 	DL_TimerG_startCounter(TIMER_0_INST);
 	NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
+	NVIC_ClearPendingIRQ(UART0_INT_IRQn);
+	NVIC_EnableIRQ(UART0_INT_IRQn);
 	//OLED self test
 	OLED_Init();
 	OLED_Clear();
@@ -285,6 +291,19 @@ int main(void)
 		}
 		lastnumber=status;
     }
+}
+
+void UART0_IRQHandler()
+{
+	switch(DL_UART_Main_getPendingInterrupt(UART0))
+	{
+		case DL_UART_MAIN_IIDX_RX:
+			data=DL_UART_Main_receiveData(UART0);
+		break;
+		// case DL_UART_MAIN_IIDX_TX:
+		// break;
+		default:break;
+	}
 }
 
 void TIMER_0_INST_IRQHandler (void){
@@ -1792,7 +1811,8 @@ void transmit(float thd, float us[5],float curve)
 	transmitdata(7,curvevalue);
 	return;
 }
-
+*/
+/*
 void transmittophone(float curve ,float thd, float u[5])
 {
 	uint8_t head=0xa5;
@@ -1824,3 +1844,22 @@ void transmittophone(float curve ,float thd, float u[5])
 	DL_UART_transmitDataBlocking(UART0,tail);
 	return;
 }*/
+
+
+// void transmittophone(float data)
+// {
+// 	uint8_t head=0xa5;
+// 	uint8_t tail=0x5a;
+// 	uint8_t check=0;
+// 	uint8_t* p=(uint8_t*)&data;
+// 	DL_UART_transmitDataBlocking(UART0,head);
+// 	for(uint8_t i=0;i<4;i++)
+// 	{
+// 		DL_UART_transmitDataBlocking(UART0,*p);
+// 		check+=*p;
+// 		p++;
+// 	}
+// 	DL_UART_transmitDataBlocking(UART0,check);
+// 	DL_UART_transmitDataBlocking(UART0,tail);
+// 	return;
+// }

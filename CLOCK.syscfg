@@ -2,7 +2,7 @@
  * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "MSPM0L130X" --package "VQFN-32(RHB)" --part "Default" --product "mspm0_sdk@1.20.01.06"
- * @versions {"tool":"1.18.1+3343"}
+ * @versions {"tool":"1.20.0+3587"}
  */
 
 /**
@@ -34,7 +34,7 @@ GPIO1.associatedPins[0].ioStructure  = "SD";
 GPIO1.associatedPins[0].assignedPin  = "2";
 GPIO1.associatedPins[1].$name        = "LED";
 GPIO1.associatedPins[1].assignedPort = "PORTA";
-GPIO1.associatedPins[1].assignedPin  = "8";
+GPIO1.associatedPins[1].assignedPin  = "10";
 GPIO1.associatedPins[2].assignedPin  = "6";
 GPIO1.associatedPins[2].$name        = "D0";
 GPIO1.associatedPins[3].$name        = "D1";
@@ -77,7 +77,7 @@ GPIO3.$name                          = "LEDLIGHTS";
 GPIO3.associatedPins.create(2);
 GPIO3.associatedPins[0].$name        = "LEDlight";
 GPIO3.associatedPins[0].initialValue = "SET";
-GPIO3.associatedPins[0].assignedPin  = "9";
+GPIO3.associatedPins[0].assignedPin  = "11";
 GPIO3.associatedPins[1].$name        = "LEDlight2";
 GPIO3.associatedPins[1].initialValue = "SET";
 GPIO3.associatedPins[1].assignedPin  = "3";
@@ -109,14 +109,20 @@ TIMER2.interruptPriority = "0";
 TIMER2.timerPeriod       = "1 s";
 TIMER2.crossTriggerEn    = true;
 
-UART1.$name                    = "UART_0";
-UART1.uartClkSrc               = "MFCLK";
-UART1.targetBaudRate           = 115200;
-UART1.enabledInterrupts        = ["RX_TIMEOUT_ERROR"];
-UART1.peripheral.rxPin.$assign = "PA11";
-UART1.peripheral.txPin.$assign = "PA10";
-UART1.txPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric0";
-UART1.rxPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric1";
+UART1.$name                            = "UART_1";
+UART1.targetBaudRate                   = 115200;
+UART1.enabledInterrupts                = ["RX","TX"];
+UART1.peripheral.rxPin.$assign         = "PA9";
+UART1.peripheral.txPin.$assign         = "PA8";
+UART1.txPinConfig.direction            = scripting.forceWrite("OUTPUT");
+UART1.txPinConfig.hideOutputInversion  = scripting.forceWrite(false);
+UART1.txPinConfig.onlyInternalResistor = scripting.forceWrite(false);
+UART1.txPinConfig.passedPeripheralType = scripting.forceWrite("Digital");
+UART1.txPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric2";
+UART1.rxPinConfig.hideOutputInversion  = scripting.forceWrite(false);
+UART1.rxPinConfig.onlyInternalResistor = scripting.forceWrite(false);
+UART1.rxPinConfig.passedPeripheralType = scripting.forceWrite("Digital");
+UART1.rxPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric3";
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
@@ -127,7 +133,7 @@ Board.peripheral.$suggestSolution            = "DEBUGSS";
 Board.peripheral.swclkPin.$suggestSolution   = "PA20";
 Board.peripheral.swdioPin.$suggestSolution   = "PA19";
 GPIO1.associatedPins[0].pin.$suggestSolution = "PA2";
-GPIO1.associatedPins[1].pin.$suggestSolution = "PA8";
+GPIO1.associatedPins[1].pin.$suggestSolution = "PA10";
 GPIO1.associatedPins[2].pin.$suggestSolution = "PA6";
 GPIO1.associatedPins[3].pin.$suggestSolution = "PA5";
 GPIO1.associatedPins[4].pin.$suggestSolution = "PA4";
@@ -139,11 +145,11 @@ GPIO2.associatedPins[4].pin.$suggestSolution = "PA0";
 GPIO2.associatedPins[5].pin.$suggestSolution = "PA1";
 GPIO2.associatedPins[6].pin.$suggestSolution = "PA7";
 GPIO2.associatedPins[7].pin.$suggestSolution = "PA12";
-GPIO3.associatedPins[0].pin.$suggestSolution = "PA9";
+GPIO3.associatedPins[0].pin.$suggestSolution = "PA11";
 GPIO3.associatedPins[1].pin.$suggestSolution = "PA3";
 GPIO4.associatedPins[0].pin.$suggestSolution = "PA16";
 GPIO4.associatedPins[1].pin.$suggestSolution = "PA15";
 SYSCTL.peripheral.$suggestSolution           = "SYSCTL";
 TIMER1.peripheral.$suggestSolution           = "TIMG1";
 TIMER2.peripheral.$suggestSolution           = "TIMG0";
-UART1.peripheral.$suggestSolution            = "UART1";
+UART1.peripheral.$suggestSolution            = "UART0";
