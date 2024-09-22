@@ -81,7 +81,7 @@ struct Alarm{
 };
 
 struct Date date={2024,2,1,0,0,0};
-
+struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};
 uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 
 bool ischanged=false;
@@ -134,7 +134,7 @@ int main(void)
 	struct Date breakpoint={0,0,0,0,0,0};
 	struct Alarm breakalarms[3];
 	//struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
-	struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};
+	// struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};
 	SYSCFG_DL_init();
 	//timer enabler
 	DL_TimerG_startCounter(TIMER_0_INST);
@@ -169,12 +169,12 @@ int main(void)
 				showtime(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 			else
 				showtimein12(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
-			save(date,alarms);
+			// save(date,alarms);
 			ischanged=false;
-			if(CheckAlarm(date,alarms))
-			{
-			  Beep(date);
-			}
+			// if(CheckAlarm(date,alarms))
+			// {
+			//   Beep(date);
+			// }
 		}
 		status=scan();
 		if(status!=114514)
@@ -292,6 +292,11 @@ void TIMER_0_INST_IRQHandler (void){
 	date.time.second++;
 	date=judge(date);
 	//transmit(date);
+	save(date,alarms);
+		if(CheckAlarm(date,alarms))
+	{
+	  Beep(date);
+	}
 	ischanged=true;
 }
 
@@ -1270,6 +1275,7 @@ void DisplayAlarm(struct Alarm* alarms)
 		  case 12:alarms[0].ison=!alarms[0].ison;isclear=true;break;
 		  case 13:alarms[1].ison=!alarms[1].ison;isclear=true;break;
 		  case 14:alarms[2].ison=!alarms[2].ison;isclear=true;break;
+		  case 16:isclear=true;break;
 		  default:break;
         }
       }
@@ -1680,10 +1686,141 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 }
 
 /*更新预计
-4，计时器配置,4s卡一下
+--4，计时器配置,4s卡一下--
 6,debunce to bool
 
 目前问题
-3，存储不灵敏
+--3，存储不灵敏--
 5, 退格
 */
+
+
+/*
+char* itoa(int num,char* str,int radix)
+{
+    char index[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";//索引表
+    unsigned unum;//存放要转换的整数的绝对值,转换的整数可能是负数
+    int i=0,j,k;//i用来指示设置字符串相应位，转换之后i其实就是字符串的长度；转换后顺序是逆序的，有正负的情况，k用来指示调整顺序的开始位置;j用来指示调整顺序时的交换。
+ 
+    //获取要转换的整数的绝对值
+    if(radix==10&&num<0)//要转换成十进制数并且是负数
+    {
+        unum=(unsigned)-num;//将num的绝对值赋给unum
+        str[i++]='-';//在字符串最前面设置为'-'号，并且索引加1
+    }
+    else unum=(unsigned)num;//若是num为正，直接赋值给unum
+ 
+    //转换部分，注意转换后是逆序的
+    do
+    {
+        str[i++]=index[unum%(unsigned)radix];//取unum的最后一位，并设置为str对应位，指示索引加1
+        unum/=radix;//unum去掉最后一位
+ 
+    }while(unum);//直至unum为0退出循环
+ 
+    str[i]='\0';//在字符串最后添加'\0'字符，c语言字符串以'\0'结束。
+ 
+    //将顺序调整过来
+    if(str[0]=='-') k=1;//如果是负数，符号不用调整，从符号后面开始调整
+    else k=0;//不是负数，全部都要调整
+ 
+    char temp;//临时变量，交换两个值时用到
+    for(j=k;j<=(i-1)/2;j++)//头尾一一对称交换，i其实就是字符串的长度，索引最大值比长度少1
+    {
+        temp=str[j];//头部赋值给临时变量
+        str[j]=str[i-1+k-j];//尾部赋值给头部
+        str[i-1+k-j]=temp;//将临时变量的值(其实就是之前的头部值)赋给尾部
+    }
+ 
+    return str;//返回转换后的字符串
+ 
+}
+
+void transmitdata(uint8_t mode, int value)
+{
+	char* thd="thd.val=";
+	char* u1="u1.val=";
+	char* u2="u2.val=";
+	char* u3="u3.val=";
+	char* u4="u4.val=";
+	char* u5="u5.val=";
+	char* tail="\xff\xff\xff";
+	char* add="add s0.id,0,";
+	char* p=NULL;
+	char stringvalue[10]={'\0'};
+	itoa(value,stringvalue,10);
+	switch(mode)
+	{
+		case 1:p=thd;break;
+		case 2:p=u1;break;
+		case 3:p=u2;break;
+		case 4:p=u3;break;
+		case 5:p=u4;break;
+		case 6:p=u5;break;
+		case 7:p=add;break;
+	}
+	transmitstring(p);
+	transmitstring(stringvalue);
+	transmitstring(tail);
+	return;
+}
+
+void transmitstring(char* p)
+{
+	for(uint8_t i=0;p[i]!='\0';i++)
+	{
+		DL_UART_transmitDataBlocking(UART0,p[i]);
+	}
+	return;
+}
+
+void transmit(float thd, float us[5],float curve)
+{
+	int thdvalue=thd*100;
+	int usvalue[5];
+	int curvevalue=(curvevalue>=0.6)?255:curve*1000/600*255;
+	for(uint8_t i=0;i<5;i++)
+	{
+		usvalue[i]=us[i]*100;
+	}
+	transmitdata(1,thdvalue);
+	transmitdata(2,usvalue[0]);
+	transmitdata(3,usvalue[1]);
+	transmitdata(4,usvalue[2]);
+	transmitdata(5,usvalue[3]);
+	transmitdata(6,usvalue[4]);
+	transmitdata(7,curvevalue);
+	return;
+}
+
+void transmittophone(float curve ,float thd, float u[5])
+{
+	uint8_t head=0xa5;
+	uint8_t tail=0x5a;
+	uint8_t check=0;
+	uint8_t* p=(uint8_t*)&curve;
+	DL_UART_transmitDataBlocking(UART0,head);
+	for(uint8_t i=0;i<4;i++)
+	{
+		DL_UART_transmitDataBlocking(UART0,*p);
+		check+=*p;
+		p++;
+	}
+	p=(uint8_t*)&thd;
+	for(uint8_t i=0;i<4;i++)
+	{
+		DL_UART_transmitDataBlocking(UART0,*p);
+		check+=*p;
+		p++;
+	}
+	p=(uint8_t*)u;
+	for(uint8_t i=0;i<20;i++)
+	{
+		DL_UART_transmitDataBlocking(UART0,*p);
+		check+=*p;
+		p++;
+	}
+	DL_UART_transmitDataBlocking(UART0,check);
+	DL_UART_transmitDataBlocking(UART0,tail);
+	return;
+}*/
