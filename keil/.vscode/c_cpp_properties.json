@@ -447,17 +447,17 @@
         {
             "name": "CLOCK",
             "includePath": [
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK\\Core\\inc",
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK\\Driver",
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK\\Driver\\CMSIS\\Core\\Include",
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK\\Core\\src",
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK\\Core\\inc",
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK\\Driver",
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK\\Driver\\CMSIS\\Core\\Include",
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK\\Core\\src",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include\\arm_linux",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include\\arm_linux_compat",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include\\libcxx",
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK",
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK\\keil",
-                "c:\\Users\\Admin\\Desktop\\experiment\\TI\\CLOCK\\Driver\\ti\\driverlib"
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK",
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK\\keil",
+                "c:\\Users\\Admin\\Desktop\\WHU study\\experiment\\TI\\CLOCK\\Driver\\ti\\driverlib"
             ],
             "defines": [
                 "__MSPM0L1306__",

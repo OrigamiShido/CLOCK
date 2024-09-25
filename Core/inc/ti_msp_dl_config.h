@@ -89,21 +89,21 @@ extern "C" {
 
 
 
-/* Defines for UART_0 */
-#define UART_0_INST                                                        UART1
-#define UART_0_INST_IRQHandler                                  UART1_IRQHandler
-#define UART_0_INST_INT_IRQN                                      UART1_INT_IRQn
-#define GPIO_UART_0_RX_PORT                                                GPIOA
-#define GPIO_UART_0_TX_PORT                                                GPIOA
-#define GPIO_UART_0_RX_PIN                                        DL_GPIO_PIN_11
-#define GPIO_UART_0_TX_PIN                                        DL_GPIO_PIN_10
-#define GPIO_UART_0_IOMUX_RX                                     (IOMUX_PINCM12)
-#define GPIO_UART_0_IOMUX_TX                                     (IOMUX_PINCM11)
-#define GPIO_UART_0_IOMUX_RX_FUNC                      IOMUX_PINCM12_PF_UART1_RX
-#define GPIO_UART_0_IOMUX_TX_FUNC                      IOMUX_PINCM11_PF_UART1_TX
-#define UART_0_BAUD_RATE                                                (115200)
-#define UART_0_IBRD_4_MHZ_115200_BAUD                                        (2)
-#define UART_0_FBRD_4_MHZ_115200_BAUD                                       (11)
+/* Defines for UART_1 */
+#define UART_1_INST                                                        UART0
+#define UART_1_INST_IRQHandler                                  UART0_IRQHandler
+#define UART_1_INST_INT_IRQN                                      UART0_INT_IRQn
+#define GPIO_UART_1_RX_PORT                                                GPIOA
+#define GPIO_UART_1_TX_PORT                                                GPIOA
+#define GPIO_UART_1_RX_PIN                                         DL_GPIO_PIN_9
+#define GPIO_UART_1_TX_PIN                                         DL_GPIO_PIN_8
+#define GPIO_UART_1_IOMUX_RX                                     (IOMUX_PINCM10)
+#define GPIO_UART_1_IOMUX_TX                                      (IOMUX_PINCM9)
+#define GPIO_UART_1_IOMUX_RX_FUNC                      IOMUX_PINCM10_PF_UART0_RX
+#define GPIO_UART_1_IOMUX_TX_FUNC                       IOMUX_PINCM9_PF_UART0_TX
+#define UART_1_BAUD_RATE                                                (115200)
+#define UART_1_IBRD_32_MHZ_115200_BAUD                                      (17)
+#define UART_1_FBRD_32_MHZ_115200_BAUD                                      (23)
 
 
 
@@ -115,9 +115,9 @@ extern "C" {
 /* Defines for CS: GPIOA.2 with pinCMx 3 on package pin 6 */
 #define GPIO_GRP_0_CS_PIN                                        (DL_GPIO_PIN_2)
 #define GPIO_GRP_0_CS_IOMUX                                       (IOMUX_PINCM3)
-/* Defines for LED: GPIOA.8 with pinCMx 9 on package pin 12 */
-#define GPIO_GRP_0_LED_PIN                                       (DL_GPIO_PIN_8)
-#define GPIO_GRP_0_LED_IOMUX                                      (IOMUX_PINCM9)
+/* Defines for LED: GPIOA.10 with pinCMx 11 on package pin 14 */
+#define GPIO_GRP_0_LED_PIN                                      (DL_GPIO_PIN_10)
+#define GPIO_GRP_0_LED_IOMUX                                     (IOMUX_PINCM11)
 /* Defines for D0: GPIOA.6 with pinCMx 7 on package pin 10 */
 #define GPIO_GRP_0_D0_PIN                                        (DL_GPIO_PIN_6)
 #define GPIO_GRP_0_D0_IOMUX                                       (IOMUX_PINCM7)
@@ -164,9 +164,9 @@ extern "C" {
 /* Port definition for Pin Group LEDLIGHTS */
 #define LEDLIGHTS_PORT                                                   (GPIOA)
 
-/* Defines for LEDlight: GPIOA.9 with pinCMx 10 on package pin 13 */
-#define LEDLIGHTS_LEDlight_PIN                                   (DL_GPIO_PIN_9)
-#define LEDLIGHTS_LEDlight_IOMUX                                 (IOMUX_PINCM10)
+/* Defines for LEDlight: GPIOA.11 with pinCMx 12 on package pin 15 */
+#define LEDLIGHTS_LEDlight_PIN                                  (DL_GPIO_PIN_11)
+#define LEDLIGHTS_LEDlight_IOMUX                                 (IOMUX_PINCM12)
 /* Defines for LEDlight2: GPIOA.3 with pinCMx 4 on package pin 7 */
 #define LEDLIGHTS_LEDlight2_PIN                                  (DL_GPIO_PIN_3)
 #define LEDLIGHTS_LEDlight2_IOMUX                                 (IOMUX_PINCM4)
@@ -189,7 +189,7 @@ void SYSCFG_DL_SYSCTL_init(void);
 void SYSCFG_DL_TIMER_0_init(void);
 void SYSCFG_DL_TIMER_1_init(void);
 void SYSCFG_DL_TIMER_Cross_Trigger_init(void);
-void SYSCFG_DL_UART_0_init(void);
+void SYSCFG_DL_UART_1_init(void);
 
 
 
