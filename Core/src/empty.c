@@ -63,6 +63,8 @@ uint8_t RxPacket[4]={0x00, 0x00, 0x00, 0x00};   //��������
 uint8_t RxTemp; //��ʱ���ݣ���ս���FIFO��
 
 uint8_t data=0;
+uint8_t databuff[20]={0};
+uint8_t idx=0;
 
 struct Time{
 	uint8_t hour;
@@ -92,6 +94,8 @@ uint8_t timersecond=60;
 uint8_t timerminute=60;
 uint8_t timerhour=24;
 
+const uint16_t month_days_table[13]={0,31,28,31,30,31,30,31,31,30,31,30,31};
+
 int countweek(uint32_t year,uint8_t month,uint8_t day);
 int scan(void);
 int debunce(uint32_t inputpin, uint32_t control);
@@ -120,6 +124,15 @@ bool CompareAlarm(struct Alarm target1,struct Alarm target2);
 void Buzz(unsigned int frequency, unsigned int duration);
 
 void transmittophone(float curve ,float thd, float u[5]);
+void order(void);
+void transmittime(uint8_t mode);
+void transmitclock(uint8_t mode,uint8_t idx);
+void blesettime(uint8_t mode);
+void blesetclock(uint8_t mode,uint8_t idx);
+void datetostamp(void);
+char* itoa(int num,char* str,int radix);
+void transmitstring(char* p);
+bool leapyear(uint32_t year);
 
 int main(void)
 {
@@ -299,6 +312,17 @@ void UART0_IRQHandler()
 	{
 		case DL_UART_MAIN_IIDX_RX:
 			data=DL_UART_Main_receiveData(UART0);
+			databuff[idx]=data;
+			idx++;
+			if(data=='\n')
+			{
+				for(uint8_t i=0;i<idx;i++)
+				{
+					databuff[i]=0;
+				}
+				idx=0;
+				order();
+			}
 		break;
 		// case DL_UART_MAIN_IIDX_TX:
 		// break;
@@ -340,6 +364,327 @@ void TIMER_1_INST_IRQHandler (void){
 		timerminute--;
 	}
 	timersecond--;
+}
+
+void order(void)
+{
+	switch(databuff[0])
+	{
+		case '?'://询问指令：?t*,?t#,?c*1,?c*2,?c*3,?c*a
+			switch(databuff[2])
+			{
+				case 't':transmittime(databuff[1]);break;
+				case 'c':transmitclock(databuff[1],databuff[3]);break;
+			}
+		break;
+		case 's'://设置指令：st*,st#,sc*1,sc*2,sc*3,sc1y,sc1n,sc2y,sc2n,sc3y,sc3n/yyyymmddhhmmss
+			switch(databuff[2])
+			{
+				case 't':blesettime(databuff);break;
+				case 'c':blesetclock(databuff);break;
+			}
+		break;
+		default:break;
+	}
+}
+
+void transmittime(uint8_t mode)
+{
+	uint8_t* p=NULL;
+	uint32_t stamp=0;
+	switch(mode)
+	{
+		case '*':
+			bledate(date);//发送时间
+		break;//正常日期
+		case '#':
+			stamp=timetostamp(date);
+			p=(uint8_t*)&stamp;
+			for(uint8_t i=0;i<4;i++)
+			{
+				DL_UART_transmitDataBlocking(UART0,*(p+i));
+			}
+			DL_UART_transmitDataBlocking(UART0,'\n');
+		break;//时间戳
+	}
+}
+
+void transmitclock(uint8_t mode,uint8_t idx)
+{
+	switch(mode)
+	{
+		case '*':
+			if(idx='a')
+			{
+				DL_UART_transmitDataBlocking(UART0,(alarms[0].ison)?'Y':'N');
+				bletime(alarms[0].time);
+				DL_UART_transmitDataBlocking(UART0,(alarms[1].ison)?'Y':'N');
+				bletime(alarms[1].time);
+				DL_UART_transmitDataBlocking(UART0,(alarms[2].ison)?'Y':'N');
+				bletime(alarms[2].time);
+			}
+			else if(idx>='0'&&idx<='5')
+			{
+				DL_UART_transmitDataBlocking(UART0,(alarms[idx-'0'-1].ison)?'Y':'N');
+				bletime(alarms[idx-'0'-1].time);
+			}
+		break;//发送闹钟
+		default:break;
+	}
+}
+
+void blesettime(char* datas)
+{
+	uint32_t year=0;
+	uint8_t month=0;
+	uint8_t day=0;
+	uint8_t hour=0;
+	uint8_t minute=0;
+	uint8_t second=0;
+	uint32_t stamp=0;
+	struct Date temp={0,0,0,0,0,0};
+	switch(datas[2])
+	{
+		case '*':
+			year=(uint32_t)(datas[3]-'0')*1000+(uint32_t)(datas[4]-'0')*100+(uint32_t)(datas[5]-'0')*10+(uint32_t)(datas[6]-'0');
+			month=(uint8_t)(datas[7]-'0')*10+(uint8_t)(datas[8]-'0');
+			day=(uint8_t)(datas[9]-'0')*10+(uint8_t)(datas[10]-'0');
+			hour=(uint8_t)(datas[11]-'0')*10+(uint8_t)(datas[12]-'0');
+			minute=(uint8_t)(datas[13]-'0')*10+(uint8_t)(datas[14]-'0');
+			second=(uint8_t)(datas[15]-'0')*10+(uint8_t)(datas[16]-'0');
+			date.year=year;
+			date.month=month;
+			date.day=day;
+			date.time.hour=hour;
+			date.time.minute=minute;
+			date.time.second=second;
+			ischanged=true;
+			//设置时间
+		break;//正常日期
+		case '#':
+			stamp=stringtostamp(datas);
+			stamptotime(stamp,&temp);
+			//validate(temp);
+			date=temp;
+			ischanged=true;
+		break;//时间戳
+	}
+	return;
+}
+
+void blesetclock(char* datas)
+{
+	uint8_t hour=0;
+	uint8_t minute=0;
+	uint8_t second=0;
+	struct Alarm temp={0,false};
+	uint8_t index=datas[3]-'0';
+	switch(datas[2])
+	{
+		case '*':
+			hour=(uint8_t)(datas[4]-'0')*10+(uint8_t)(datas[5]-'0');
+			minute=(uint8_t)(datas[6]-'0')*10+(uint8_t)(datas[7]-'0');
+			second=(uint8_t)(datas[8]-'0')*10+(uint8_t)(datas[9]-'0');
+			temp.time.hour=hour;
+			temp.time.minute=minute;
+			temp.time.second=second;
+			temp.ison=(datas[10]=='Y')?true:false;
+			if(validatealarm(temp))
+			{
+				alarms[index]=temp;
+				alarms[index].ison=true;
+			}
+			//设置闹钟
+		break;//设置闹钟
+		case '1':
+		case '2':
+		case '3':if(datas[4]=='Y'||datas[4]=='y')
+				{
+					alarms[datas[2]-1-'0'].ison=true;
+				}
+				else if(datas[4]=='N'||datas[4]=='n')
+				{
+					alarms[datas[2]-1-'0'].ison=false;				}
+		default:break;
+	}
+}
+
+void bledate(struct Date target)
+{
+	char string[5]={'\0'};
+	uint8_t week=9;
+	itoa(target.year,string,10);
+	transmitstring(string);
+	itoa(target.month,string,10);
+	if(target.month<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	itoa(target.day,string,10);
+	if(target.day<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	week=countweek(target.year,target.month,target.day);
+	switch(week)
+	{
+		case 0:transmitstring("MON");break;
+		case 1:transmitstring("TUE");break;
+		case 2:transmitstring("WED");break;
+		case 3:transmitstring("THU");break;
+		case 4:transmitstring("FRI");break;
+		case 5:transmitstring("SAT");break;
+		case 6:transmitstring("SUN");break;
+		default:break;
+	}
+	bletime(target.time);
+	return;
+}
+
+void bletime(struct Time target)
+{
+	uint8_t* p=NULL;
+	char string[3]={'\0'};
+	itoa(target.hour,string,10);
+	if(target.hour<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	itoa(target.minute,string,10);
+	if(target.minute<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	itoa(target.second,string,10);
+	if(target.second<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	DL_UART_transmitDataBlocking(UART0,'\n');
+	return;
+}
+
+uint32_t timetostamp(struct Date target)
+{
+	static uint32_t dax=0;
+	static uint32_t day_count=0;
+	uint16_t leap_year_count=0;
+	uint16_t i;
+
+	for(i=1970;i<target.year;i++)
+	{
+		if(leapyear(i))
+		{
+			leap_year_count++;
+		}
+	}
+
+	day_count=leap_year_count*366+(target.year-1970-leap_year_count)*365;
+
+	for(i=1;i<target.month;i++)
+	{
+		if((2==i)&&(leapyear(target.year)))
+		{
+			day_count+=29;
+		}
+		else
+		{
+			day_count+=month_days_table[i];
+		}
+	}
+
+	day_count+=(target.day-1);
+
+	dax=(uint32_t)(day_count*86400)+(uint32_t)((uint32_t)target.time.hour*3600)+(uint32_t)((uint32_t)target.time.minute*60)+(uint32_t)target.time.second;
+
+	dax=dax-8*60*60;
+
+	return dax;
+}
+
+uint32_t stamptotime(uint32_t timep,struct Date* target)
+{
+	uint32_t days=0;
+	uint32_t rem=0;
+
+	timep=timep+8*60*60;
+
+	days=(uint32_t)(timep/86400);
+	rem=(uint32_t)(timep%86400);
+
+	uint16_t year;
+	for(year=1970;;++year)
+	{
+		uint16_t leap=((year%4==0&&year%100!=0)||(year%400==0));
+		uint16_t ydays=leap?366:365;
+		if(days<ydays)
+		{
+			break;
+		}
+		days-=ydays;
+	}
+
+	target->year=year;
+
+	static const uint16_t days_in_month[]={31,28,31,30,31,30,31,31,30,31,30,31};
+	uint16_t month;
+
+	for(month=0;month<12;month++)
+	{
+		uint16_t mdays=days_in_month[month];
+		if(month==1&&((year%4==0&&year%100!=0)||(year%400==0)))
+		{
+			mdays=29;
+		}
+		if(days<mdays)
+		{
+			break;
+		}
+		days-=mdays;
+	}
+	target->month=month+1;
+
+	target->day=days+1;
+
+	target->time.hour=rem/3600;
+	rem%=3600;
+	target->time.minute=rem/60;
+	target->time.second=rem%60;
+
+	return 0;
+
+}
+
+uint32_t stringtostamp(char* target)
+{
+	//从3开始
+	const char shex[]="0123456789abcdef";
+	const char bhex[]="0123456789ABCDEF";
+	uint32_t stamp=0;
+
+	for(uint8_t i=3;target[i]!='\n';i++)
+	{
+		uint8_t j=0;
+		for(j=0;j<16;j++)
+		{
+			if(target[i]==shex[j]||target[i]==bhex[j])
+			{
+				break;
+			}
+		}
+		stamp=stamp*16+j;
+	}
+	return stamp;
+}
+
+bool leapyear(uint32_t year)
+{
+	return(((year%4==0)&&(year%100!=0))||(year%400==0));
 }
 
 bool validate(struct Date target)
@@ -1334,6 +1679,7 @@ void DisplayCounter(void)
 			NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);
 			Beep(timer);
 			ismove=true;
+			isticked=false;
 		}
 		/*if(timer.time.second==0)
 		{
@@ -1459,7 +1805,7 @@ void Beep(struct Date target)
 	while(1)
 	{
 		Buzz(C3,200);
-		delay_cycles(3400000);
+		delay_cycles(1700000);
 		if(scan()!=114514)
 		{
 			break;
@@ -1668,7 +2014,7 @@ int debunce(uint32_t inputpin, uint32_t control)
 	if(!control){
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 	{
-	delay_cycles(800000);
+	delay_cycles(400000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 		return 1;
 	else 
@@ -1678,10 +2024,10 @@ int debunce(uint32_t inputpin, uint32_t control)
 }
 	
 	else {
-		delay_cycles(1600000);
+		delay_cycles(800000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 	{
-	delay_cycles(1600000);
+	delay_cycles(800000);
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 		return 1;
 	else 
@@ -1713,8 +2059,6 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 5, 退格
 */
 
-
-/*
 char* itoa(int num,char* str,int radix)
 {
     char index[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";//索引表
@@ -1755,6 +2099,15 @@ char* itoa(int num,char* str,int radix)
  
 }
 
+void transmitstring(char* p)
+{
+	for(uint8_t i=0;p[i]!='\0';i++)
+	{
+		DL_UART_transmitDataBlocking(UART0,p[i]);
+	}
+	return;
+}
+/*
 void transmitdata(uint8_t mode, int value)
 {
 	char* thd="thd.val=";
@@ -1781,15 +2134,6 @@ void transmitdata(uint8_t mode, int value)
 	transmitstring(p);
 	transmitstring(stringvalue);
 	transmitstring(tail);
-	return;
-}
-
-void transmitstring(char* p)
-{
-	for(uint8_t i=0;p[i]!='\0';i++)
-	{
-		DL_UART_transmitDataBlocking(UART0,p[i]);
-	}
 	return;
 }
 
