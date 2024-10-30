@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\empty_driverlib_src_LP_MSPM0L1306_nortos_keil.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\empty_driverlib_src_LP_MSPM0L1306_nortos_keil.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6210000: Last Updated: Wed Oct 30 13:50:11 2024
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6210000: Last Updated: Wed Oct 30 14:05:05 2024
 <BR><P>
 <H3>Maximum Stack Usage =        456 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -901,8 +901,8 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> startup_mspm0l1306_uvision.o(RESET)
 </UL>
-<P><STRONG><a name="[c]"></a>UART0_IRQHandler</STRONG> (Thumb, 116 bytes, Stack size 16 bytes, empty.o(.text.UART0_IRQHandler))
-<BR><BR>[Stack]<UL><LI>Max Depth = 288<LI>Call Chain = UART0_IRQHandler &rArr; order &rArr; transmittime &rArr; bledate &rArr; bletime &rArr; itoa &rArr; __aeabi_memcpy
+<P><STRONG><a name="[c]"></a>UART0_IRQHandler</STRONG> (Thumb, 64 bytes, Stack size 8 bytes, empty.o(.text.UART0_IRQHandler))
+<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = UART0_IRQHandler &rArr; order &rArr; transmittime &rArr; bledate &rArr; bletime &rArr; itoa &rArr; __aeabi_memcpy
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;order
 <LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DL_UART_receiveData
@@ -1041,7 +1041,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OLED_ShowNum
 </UL>
 
-<P><STRONG><a name="[a4]"></a>order</STRONG> (Thumb, 112 bytes, Stack size 24 bytes, empty.o(.text.order))
+<P><STRONG><a name="[a4]"></a>order</STRONG> (Thumb, 164 bytes, Stack size 24 bytes, empty.o(.text.order))
 <BR><BR>[Stack]<UL><LI>Max Depth = 272<LI>Call Chain = order &rArr; transmittime &rArr; bledate &rArr; bletime &rArr; itoa &rArr; __aeabi_memcpy
 </UL>
 <BR>[Calls]<UL><LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;blesetclock
