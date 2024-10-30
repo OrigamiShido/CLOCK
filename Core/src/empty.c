@@ -127,12 +127,17 @@ void transmittophone(float curve ,float thd, float u[5]);
 void order(void);
 void transmittime(uint8_t mode);
 void transmitclock(uint8_t mode,uint8_t idx);
-void blesettime(uint8_t mode);
-void blesetclock(uint8_t mode,uint8_t idx);
+void blesettime(uint8_t* datas);
+void blesetclock(uint8_t* datas);
 void datetostamp(void);
 char* itoa(int num,char* str,int radix);
 void transmitstring(char* p);
 bool leapyear(uint32_t year);
+void bledate(struct Date target);
+uint32_t timetostamp(struct Date target);
+void bletime(struct Time target);
+uint32_t stringtostamp(uint8_t* target);
+uint32_t stamptotime(uint32_t timep,struct Date* target);
 
 int main(void)
 {
@@ -414,7 +419,7 @@ void transmitclock(uint8_t mode,uint8_t idx)
 	switch(mode)
 	{
 		case '*':
-			if(idx='a')
+			if(idx=='a')
 			{
 				DL_UART_transmitDataBlocking(UART0,(alarms[0].ison)?'Y':'N');
 				bletime(alarms[0].time);
@@ -433,7 +438,7 @@ void transmitclock(uint8_t mode,uint8_t idx)
 	}
 }
 
-void blesettime(char* datas)
+void blesettime(uint8_t* datas)
 {
 	uint32_t year=0;
 	uint8_t month=0;
@@ -472,7 +477,7 @@ void blesettime(char* datas)
 	return;
 }
 
-void blesetclock(char* datas)
+void blesetclock(uint8_t* datas)
 {
 	uint8_t hour=0;
 	uint8_t minute=0;
@@ -660,7 +665,7 @@ uint32_t stamptotime(uint32_t timep,struct Date* target)
 
 }
 
-uint32_t stringtostamp(char* target)
+uint32_t stringtostamp(uint8_t* target)
 {
 	//从3开始
 	const char shex[]="0123456789abcdef";
