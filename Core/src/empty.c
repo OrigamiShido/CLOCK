@@ -84,61 +84,66 @@ struct Alarm{
   bool ison;
 };
 
-struct Date date={2024,2,1,0,0,0};
-struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};
-uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
+struct Date date={2024,2,1,0,0,0};//主日期
+struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};//闹钟
+uint32_t EEPROMEmulationBuffer[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};//FLASH存储数组
 
-bool ischanged=false;
-bool isticked=false;
+bool ischanged=false;//显示更改判断
+bool isticked=false;//计时器计时判断
 uint8_t timersecond=60;
 uint8_t timerminute=60;
 uint8_t timerhour=24;
 
 const uint16_t month_days_table[13]={0,31,28,31,30,31,30,31,31,30,31,30,31};
 
-int countweek(uint32_t year,uint8_t month,uint8_t day);
-int scan(void);
-int debunce(uint32_t inputpin, uint32_t control);
-int digitalcount(double input);
-void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
-void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);
-void DisplaySettings(void);
-struct Time Settime(struct Time original,uint8_t num);
-void Setdate(void);
-int setparameter(int maxcount,int parameter,int number);
-struct Date judge(struct Date judgedate);
-void save(struct Date savedate,struct Alarm savealarm[3]);
-struct Date read(uint8_t mode);
-bool validate(struct Date target);
-void DisplayFunctions(void);
+int countweek(uint32_t year,uint8_t month,uint8_t day);//日期计算函数
+int scan(void);//矩阵键盘扫描函数
+int debunce(uint32_t inputpin, uint32_t control);//消抖函数
+int digitalcount(double input);//数字位数计算函数
+void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);//时间显示函数
+void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek);//12小时制时间显示函数
+void DisplaySettings(void);//设置子菜单显示函数
+struct Time Settime(struct Time original,uint8_t num);//时间设置函数
+void Setdate(void);//日期设置函数
+int setparameter(int maxcount,int parameter,int number);//参数设置函数
+struct Date judge(struct Date judgedate);//日期进位函数
+void save(struct Date savedate,struct Alarm savealarm[3]);//存储函数
+struct Date read(uint8_t mode);//日期时间读取函数
+bool validate(struct Date target);//日期时间验证函数
+void DisplayFunctions(void);//其他功能i惨淡显示函数
 
 //new functions
-void DisplayCounter(void);
-bool CheckAlarm(struct Date target,struct Alarm alarms[3]);
-void Beep(struct Date target);
-void readalarm(struct Alarm* target);
-bool validatealarm(struct Alarm target);
-void DisplayAlarm(struct Alarm* alarms);
-void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);
-bool CompareAlarm(struct Alarm target1,struct Alarm target2);
-void Buzz(unsigned int frequency, unsigned int duration);
+void DisplayCounter(void);//计时器显示函数
+bool CheckAlarm(struct Date target,struct Alarm alarms[3]);//闹钟检测函数
+void Beep(struct Date target);//蜂鸣函数
+void readalarm(struct Alarm* target);//闹钟读取函数
+bool validatealarm(struct Alarm target);//闹钟验证合法函数
+void DisplayAlarm(struct Alarm* alarms);//闹钟功能函数
+void showtimesimplified(int x, int y, uint8_t showhour,uint8_t showminute,uint8_t showsecond);//时间显示函数（指定位置显示）
+bool CompareAlarm(struct Alarm target1,struct Alarm target2);//闹钟比较函数
+void Buzz(unsigned int frequency, unsigned int duration);//具体蜂鸣函数（指定蜂鸣时间、蜂鸣频率）
 
 void transmittophone(float curve ,float thd, float u[5]);
 void order(void);
 void transmittime(uint8_t mode);
 void transmitclock(uint8_t mode,uint8_t idx);
-void blesettime(uint8_t mode);
-void blesetclock(uint8_t mode,uint8_t idx);
+void blesettime(uint8_t* datas);
+void blesetclock(uint8_t* datas);
 void datetostamp(void);
 char* itoa(int num,char* str,int radix);
 void transmitstring(char* p);
 bool leapyear(uint32_t year);
+void bledate(struct Date target);
+uint32_t timetostamp(struct Date target);
+void bletime(struct Time target);
+uint32_t stringtostamp(uint8_t* target);
+uint32_t stamptotime(uint32_t timep,struct Date* target);
 
-int main(void)
+int main(void)//主函数
 {
 	//VARIABLES
-	unsigned int status=114514;
-	unsigned int lastnumber=0;
+	unsigned int status=114514;//键盘状态
+	unsigned int lastnumber=0;//存储上一个循环的映射数字
 
 	bool isset=false;
 	bool isclear=false;
@@ -152,20 +157,20 @@ int main(void)
 	struct Alarm breakalarms[3];
 	//struct Alarm alarms[3]={{0,0,0,false},{0,0,0,false},{0,0,0,false}};
 	// struct Alarm alarms[3]={{0,0,0,true},{0,0,0,false},{0,0,0,false}};
-	SYSCFG_DL_init();
+	SYSCFG_DL_init();//系统初始化
 	//timer enabler
-	DL_TimerG_startCounter(TIMER_0_INST);
-	NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
-	NVIC_ClearPendingIRQ(UART0_INT_IRQn);
-	NVIC_EnableIRQ(UART0_INT_IRQn);
+	DL_TimerG_startCounter(TIMER_0_INST);//开始计秒
+	NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);//开计时器中断
+	NVIC_ClearPendingIRQ(UART0_INT_IRQn);//初始化UART
+	NVIC_EnableIRQ(UART0_INT_IRQn);//开UART中断
 	//OLED self test
-	OLED_Init();
-	OLED_Clear();
+	OLED_Init();//初始化OLED屏幕
+	OLED_Clear();//清屏
 
 	//EEPROM_TypeA_eraseAllSectors();
     //EEPROMEmulationState = EEPROM_TypeA_init(&EEPROMEmulationBuffer[0]);
 
-	breakpoint=read(CLOCK);
+	breakpoint=read(CLOCK);//读取FLASH存储器中的闹钟
 	if(validate(breakpoint))
 	{
 		date=breakpoint;
@@ -179,28 +184,28 @@ int main(void)
 		alarms[i]=breakalarms[i];
 	  }
 	}
-	while (1) 
+	while (1) //主循环
 	{
-		week=countweek(date.year,date.month,date.day);
-		if(ischanged)
+		week=countweek(date.year,date.month,date.day);//计算星期
+		if(ischanged)//时钟改变（计秒、进位等）
 		{
-			if(is24hour)
+			if(is24hour)//24小时制时
 				showtime(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
-			else
+			else//12小时制时
 				showtimein12(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 			// save(date,alarms);
-			ischanged=false;
+			ischanged=false;//复位
 			// if(CheckAlarm(date,alarms))
 			// {
 			//   Beep(date);
 			// }
 		}
-		status=scan();
-		if(status!=114514)
+		status=scan();//扫描键盘
+		if(status!=114514)//扫描到可用值
 		{
-			if(lastnumber!=status)
+			if(lastnumber!=status)//非长按，即检测按键的下降沿
 			{
-				switch(status)
+				switch(status)//检查映射
 				{
 					case 12://时钟设置子菜单
 					while(1)
@@ -208,10 +213,10 @@ int main(void)
 						if(!isclear)
 						{
 							OLED_Clear();
-							DisplaySettings();
+							DisplaySettings();//显示设置菜单
 							isclear=true;
 						}
-						status=scan();
+						status=scan();//检测键盘
 						if(status!=114514)
 						{
 							if(lastnumber!=status)
@@ -220,21 +225,21 @@ int main(void)
 								{
 									case 1:
 									isclear=false;
-									Setdate();
+									Setdate();//设置日期
 									break;	
 									case 2:
 									isclear=false;
-									date.time=Settime(date.time,2);
+									date.time=Settime(date.time,2);//设置时间
 									break;
 									case 3:isset=true;
 									isclear=false;
-									OLED_Clear();
+									OLED_Clear();//退出界面
 									break;
 									default:break;
 								}
 							}
 						}
-						lastnumber=status;
+						lastnumber=status;//缓存上次按键的映射值
 						if(isset)
 						{
 							isset=false;
@@ -245,7 +250,7 @@ int main(void)
 					case 13://24小时制切换
 					is24hour=!is24hour;
 					OLED_Clear();
-					if(is24hour)
+					if(is24hour)//立刻更换一次显示
 						showtime(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
 					else
 						showtimein12(date.time.hour,date.time.minute,date.time.second,date.year,date.month,date.day,week);
@@ -268,15 +273,15 @@ int main(void)
 								{
 									case 1:
 									isclear=false;
-									DisplayAlarm(alarms);
+									DisplayAlarm(alarms);//切换到闹钟设置功能
 									break;	
 									case 2:
 									isclear=false;
-									DisplayCounter();
+									DisplayCounter();//切换到计时器功能
 									break;
 									case 3:isset=true;
 									isclear=false;
-									OLED_Clear();
+									OLED_Clear();//退出
 									break;
 									default:break;
 								}
@@ -290,7 +295,7 @@ int main(void)
 						}
 					}
 					break;
-					case 15:
+					case 15://无意义按键，可指定快捷功能
 						isclear=false;
 						DisplayCounter();
 					break;
@@ -302,26 +307,21 @@ int main(void)
 		{
 			;
 		}
-		lastnumber=status;
+		lastnumber=status;//缓存
     }
 }
 
-void UART0_IRQHandler()
+void UART0_IRQHandler()//UART中断函数
 {
 	switch(DL_UART_Main_getPendingInterrupt(UART0))
 	{
-		case DL_UART_MAIN_IIDX_RX:
-			data=DL_UART_Main_receiveData(UART0);
-			databuff[idx]=data;
+		case DL_UART_MAIN_IIDX_RX://接收中断
+			data=DL_UART_Main_receiveData(UART0);//接收数据
+			databuff[idx]=data;//数据缓存到buff数组
 			idx++;
-			if(data=='\n')
+			if(data=='\n')//结束符
 			{
-				for(uint8_t i=0;i<idx;i++)
-				{
-					databuff[i]=0;
-				}
-				idx=0;
-				order();
+				order();//检测蓝牙指令并执行
 			}
 		break;
 		// case DL_UART_MAIN_IIDX_TX:
@@ -330,29 +330,29 @@ void UART0_IRQHandler()
 	}
 }
 
-void TIMER_0_INST_IRQHandler (void){
-	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);
-	date.time.second++;
-	date=judge(date);
+void TIMER_0_INST_IRQHandler (void){//计时器中断
+	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight_PIN);//指示灯翻转
+	date.time.second++;//计秒
+	date=judge(date);//进位
 	//transmit(date);
-	save(date,alarms);
-		if(CheckAlarm(date,alarms))
+	save(date,alarms);//保存此时时间
+	if(CheckAlarm(date,alarms))//检测到闹钟时间
 	{
-	  Beep(date);
+	  Beep(date);//鸣响
 	}
-	ischanged=true;
+	ischanged=true;//更改过时间
 }
 
-void TIMER_1_INST_IRQHandler (void){
-	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight2_PIN);
-	isticked=true;
+void TIMER_1_INST_IRQHandler (void){//计时器功能中断
+	DL_GPIO_togglePins(LEDLIGHTS_PORT, LEDLIGHTS_LEDlight2_PIN);//翻转指示灯
+	isticked=true;//计时器计秒
 	if(timersecond==0)
 	{	
 		if(timerminute==0)
 		{
 			if(timerhour==0)
 			{
-				return;
+				return;//如果计时为00：00：00，结束
 			}
 			else
 			{
@@ -363,335 +363,19 @@ void TIMER_1_INST_IRQHandler (void){
 		timersecond+=60;
 		timerminute--;
 	}
-	timersecond--;
+	timersecond--;//减计时
 }
 
-void order(void)
-{
-	switch(databuff[0])
-	{
-		case '?'://询问指令：?t*,?t#,?c*1,?c*2,?c*3,?c*a
-			switch(databuff[2])
-			{
-				case 't':transmittime(databuff[1]);break;
-				case 'c':transmitclock(databuff[1],databuff[3]);break;
-			}
-		break;
-		case 's'://设置指令：st*,st#,sc*1,sc*2,sc*3,sc1y,sc1n,sc2y,sc2n,sc3y,sc3n/yyyymmddhhmmss
-			switch(databuff[2])
-			{
-				case 't':blesettime(databuff);break;
-				case 'c':blesetclock(databuff);break;
-			}
-		break;
-		default:break;
-	}
-}
-
-void transmittime(uint8_t mode)
-{
-	uint8_t* p=NULL;
-	uint32_t stamp=0;
-	switch(mode)
-	{
-		case '*':
-			bledate(date);//发送时间
-		break;//正常日期
-		case '#':
-			stamp=timetostamp(date);
-			p=(uint8_t*)&stamp;
-			for(uint8_t i=0;i<4;i++)
-			{
-				DL_UART_transmitDataBlocking(UART0,*(p+i));
-			}
-			DL_UART_transmitDataBlocking(UART0,'\n');
-		break;//时间戳
-	}
-}
-
-void transmitclock(uint8_t mode,uint8_t idx)
-{
-	switch(mode)
-	{
-		case '*':
-			if(idx='a')
-			{
-				DL_UART_transmitDataBlocking(UART0,(alarms[0].ison)?'Y':'N');
-				bletime(alarms[0].time);
-				DL_UART_transmitDataBlocking(UART0,(alarms[1].ison)?'Y':'N');
-				bletime(alarms[1].time);
-				DL_UART_transmitDataBlocking(UART0,(alarms[2].ison)?'Y':'N');
-				bletime(alarms[2].time);
-			}
-			else if(idx>='0'&&idx<='5')
-			{
-				DL_UART_transmitDataBlocking(UART0,(alarms[idx-'0'-1].ison)?'Y':'N');
-				bletime(alarms[idx-'0'-1].time);
-			}
-		break;//发送闹钟
-		default:break;
-	}
-}
-
-void blesettime(char* datas)
-{
-	uint32_t year=0;
-	uint8_t month=0;
-	uint8_t day=0;
-	uint8_t hour=0;
-	uint8_t minute=0;
-	uint8_t second=0;
-	uint32_t stamp=0;
-	struct Date temp={0,0,0,0,0,0};
-	switch(datas[2])
-	{
-		case '*':
-			year=(uint32_t)(datas[3]-'0')*1000+(uint32_t)(datas[4]-'0')*100+(uint32_t)(datas[5]-'0')*10+(uint32_t)(datas[6]-'0');
-			month=(uint8_t)(datas[7]-'0')*10+(uint8_t)(datas[8]-'0');
-			day=(uint8_t)(datas[9]-'0')*10+(uint8_t)(datas[10]-'0');
-			hour=(uint8_t)(datas[11]-'0')*10+(uint8_t)(datas[12]-'0');
-			minute=(uint8_t)(datas[13]-'0')*10+(uint8_t)(datas[14]-'0');
-			second=(uint8_t)(datas[15]-'0')*10+(uint8_t)(datas[16]-'0');
-			date.year=year;
-			date.month=month;
-			date.day=day;
-			date.time.hour=hour;
-			date.time.minute=minute;
-			date.time.second=second;
-			ischanged=true;
-			//设置时间
-		break;//正常日期
-		case '#':
-			stamp=stringtostamp(datas);
-			stamptotime(stamp,&temp);
-			//validate(temp);
-			date=temp;
-			ischanged=true;
-		break;//时间戳
-	}
-	return;
-}
-
-void blesetclock(char* datas)
-{
-	uint8_t hour=0;
-	uint8_t minute=0;
-	uint8_t second=0;
-	struct Alarm temp={0,false};
-	uint8_t index=datas[3]-'0';
-	switch(datas[2])
-	{
-		case '*':
-			hour=(uint8_t)(datas[4]-'0')*10+(uint8_t)(datas[5]-'0');
-			minute=(uint8_t)(datas[6]-'0')*10+(uint8_t)(datas[7]-'0');
-			second=(uint8_t)(datas[8]-'0')*10+(uint8_t)(datas[9]-'0');
-			temp.time.hour=hour;
-			temp.time.minute=minute;
-			temp.time.second=second;
-			temp.ison=(datas[10]=='Y')?true:false;
-			if(validatealarm(temp))
-			{
-				alarms[index]=temp;
-				alarms[index].ison=true;
-			}
-			//设置闹钟
-		break;//设置闹钟
-		case '1':
-		case '2':
-		case '3':if(datas[4]=='Y'||datas[4]=='y')
-				{
-					alarms[datas[2]-1-'0'].ison=true;
-				}
-				else if(datas[4]=='N'||datas[4]=='n')
-				{
-					alarms[datas[2]-1-'0'].ison=false;				}
-		default:break;
-	}
-}
-
-void bledate(struct Date target)
-{
-	char string[5]={'\0'};
-	uint8_t week=9;
-	itoa(target.year,string,10);
-	transmitstring(string);
-	itoa(target.month,string,10);
-	if(target.month<10)
-	{
-		DL_UART_transmitDataBlocking(UART0,'0');
-	}
-	transmitstring(string);
-	itoa(target.day,string,10);
-	if(target.day<10)
-	{
-		DL_UART_transmitDataBlocking(UART0,'0');
-	}
-	transmitstring(string);
-	week=countweek(target.year,target.month,target.day);
-	switch(week)
-	{
-		case 0:transmitstring("MON");break;
-		case 1:transmitstring("TUE");break;
-		case 2:transmitstring("WED");break;
-		case 3:transmitstring("THU");break;
-		case 4:transmitstring("FRI");break;
-		case 5:transmitstring("SAT");break;
-		case 6:transmitstring("SUN");break;
-		default:break;
-	}
-	bletime(target.time);
-	return;
-}
-
-void bletime(struct Time target)
-{
-	uint8_t* p=NULL;
-	char string[3]={'\0'};
-	itoa(target.hour,string,10);
-	if(target.hour<10)
-	{
-		DL_UART_transmitDataBlocking(UART0,'0');
-	}
-	transmitstring(string);
-	itoa(target.minute,string,10);
-	if(target.minute<10)
-	{
-		DL_UART_transmitDataBlocking(UART0,'0');
-	}
-	transmitstring(string);
-	itoa(target.second,string,10);
-	if(target.second<10)
-	{
-		DL_UART_transmitDataBlocking(UART0,'0');
-	}
-	transmitstring(string);
-	DL_UART_transmitDataBlocking(UART0,'\n');
-	return;
-}
-
-uint32_t timetostamp(struct Date target)
-{
-	static uint32_t dax=0;
-	static uint32_t day_count=0;
-	uint16_t leap_year_count=0;
-	uint16_t i;
-
-	for(i=1970;i<target.year;i++)
-	{
-		if(leapyear(i))
-		{
-			leap_year_count++;
-		}
-	}
-
-	day_count=leap_year_count*366+(target.year-1970-leap_year_count)*365;
-
-	for(i=1;i<target.month;i++)
-	{
-		if((2==i)&&(leapyear(target.year)))
-		{
-			day_count+=29;
-		}
-		else
-		{
-			day_count+=month_days_table[i];
-		}
-	}
-
-	day_count+=(target.day-1);
-
-	dax=(uint32_t)(day_count*86400)+(uint32_t)((uint32_t)target.time.hour*3600)+(uint32_t)((uint32_t)target.time.minute*60)+(uint32_t)target.time.second;
-
-	dax=dax-8*60*60;
-
-	return dax;
-}
-
-uint32_t stamptotime(uint32_t timep,struct Date* target)
-{
-	uint32_t days=0;
-	uint32_t rem=0;
-
-	timep=timep+8*60*60;
-
-	days=(uint32_t)(timep/86400);
-	rem=(uint32_t)(timep%86400);
-
-	uint16_t year;
-	for(year=1970;;++year)
-	{
-		uint16_t leap=((year%4==0&&year%100!=0)||(year%400==0));
-		uint16_t ydays=leap?366:365;
-		if(days<ydays)
-		{
-			break;
-		}
-		days-=ydays;
-	}
-
-	target->year=year;
-
-	static const uint16_t days_in_month[]={31,28,31,30,31,30,31,31,30,31,30,31};
-	uint16_t month;
-
-	for(month=0;month<12;month++)
-	{
-		uint16_t mdays=days_in_month[month];
-		if(month==1&&((year%4==0&&year%100!=0)||(year%400==0)))
-		{
-			mdays=29;
-		}
-		if(days<mdays)
-		{
-			break;
-		}
-		days-=mdays;
-	}
-	target->month=month+1;
-
-	target->day=days+1;
-
-	target->time.hour=rem/3600;
-	rem%=3600;
-	target->time.minute=rem/60;
-	target->time.second=rem%60;
-
-	return 0;
-
-}
-
-uint32_t stringtostamp(char* target)
-{
-	//从3开始
-	const char shex[]="0123456789abcdef";
-	const char bhex[]="0123456789ABCDEF";
-	uint32_t stamp=0;
-
-	for(uint8_t i=3;target[i]!='\n';i++)
-	{
-		uint8_t j=0;
-		for(j=0;j<16;j++)
-		{
-			if(target[i]==shex[j]||target[i]==bhex[j])
-			{
-				break;
-			}
-		}
-		stamp=stamp*16+j;
-	}
-	return stamp;
-}
-
-bool leapyear(uint32_t year)
+bool leapyear(uint32_t year)//闰年判断程序
 {
 	return(((year%4==0)&&(year%100!=0))||(year%400==0));
 }
 
-bool validate(struct Date target)
+bool validate(struct Date target)//检测日期合法程序
 {
-	if(target.year>=0&&target.year<=9999&&target.month>=1&&target.month<=12&&target.day>=1&&target.day<=31&&target.time.hour>=0&&target.time.hour<=23&&target.time.minute>=0&&target.time.minute<=59&&target.time.second>=0&&target.time.second<=59)
+	if(target.year>=0&&target.year<=9999&&target.month>=1&&target.month<=12&&target.day>=1&&target.day<=31&&target.time.hour>=0&&target.time.hour<=23&&target.time.minute>=0&&target.time.minute<=59&&target.time.second>=0&&target.time.second<=59)//确定日期范围合法
 	{
-		if((target.month==4||target.month==6||target.month==9||target.month==11)&&target.day==31)
+		if((target.month==4||target.month==6||target.month==9||target.month==11)&&target.day==31)//小月31日不合法
 		{
 			return false;
 		}
@@ -701,14 +385,14 @@ bool validate(struct Date target)
 			{
 				if(target.day>29)
 				{
-					return false;
+					return false;//2月闰年30日不合法
 				}
 			}
 			else
 			{
 				if(target.day>28)
 				{
-					return false;
+					return false;//2月非闰年29日不合法
 				}
 			}
 		}
@@ -716,11 +400,11 @@ bool validate(struct Date target)
 	}
 	else
 	{
-		return false;
+		return false;//超出正常范围不合法
 	}
 }
 
-struct Date judge(struct Date judgedate)
+struct Date judge(struct Date judgedate)//日期进位函数
 {
 	if(judgedate.time.second>=60)
 	{
@@ -737,7 +421,7 @@ struct Date judge(struct Date judgedate)
 		judgedate.time.hour=0;
 		judgedate.day++;
 	}
-	switch(judgedate.day)
+	switch(judgedate.day)//日期判断进位
 	{
 		case 29:if((judgedate.year%4==0&&judgedate.year%100!=0)||(judgedate.year%400==0))
 					{
@@ -787,12 +471,12 @@ struct Date judge(struct Date judgedate)
 	return judgedate;
 }
 
-void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek)
+void showtime(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_t showyear,uint8_t showmonth,uint8_t showday,unsigned int showweek)//时间检测函数
 {
-	unsigned int yeardigital=digitalcount(showyear);
+	unsigned int yeardigital=digitalcount(showyear);//判断年份位数
 	//OLED_Clear();
 	
-	switch(showhour)
+	switch(showhour)//穷举法显示
 	{
 		case 0:OLED_ShowString(0,0,"00:");break;
 		case 1:OLED_ShowString(0,0,"01:");break;
@@ -996,7 +680,7 @@ void showtimein12(uint8_t showhour,uint8_t showminute,uint8_t showsecond,uint32_
 		if(showhour>12)
 			showhour-=12;
 		showtime(showhour,showminute,showsecond,showyear,showmonth,showday,showweek);
-		OLED_ShowString(64,0,"(PM)");
+		OLED_ShowString(64,0,"(PM)");//12小时制在后缀AM/PM
 	}
 	else
 	{
@@ -1162,7 +846,7 @@ void showtimesimplified(int x, int y,uint8_t showhour,uint8_t showminute,uint8_t
 	}
 }
 
-void DisplaySettings(void)
+void DisplaySettings(void)//设置功能显示
 {
 	OLED_Clear();
 	OLED_ShowString(0,0,"Settings");
@@ -1171,7 +855,7 @@ void DisplaySettings(void)
 	OLED_ShowString(0,6,"3. Exit");
 }
 
-void DisplayFunctions(void)
+void DisplayFunctions(void)//特殊功能显示
 {
 	OLED_Clear();
 	OLED_ShowString(0,0,"Functions");
@@ -1180,7 +864,7 @@ void DisplayFunctions(void)
 	OLED_ShowString(0,6,"3. Exit");
 }
 
-struct Time Settime(struct Time original,uint8_t num)
+struct Time Settime(struct Time original,uint8_t num)//时间设置
 {
 	struct Time result;
 	unsigned int yscale=0;
@@ -1198,7 +882,7 @@ struct Time Settime(struct Time original,uint8_t num)
 
 	while(1)
 	{
-		if(isbackspaced)
+		if(isbackspaced)//退格
 		{
 			OLED_Clear();
 			//OLED_Init();
@@ -1256,7 +940,7 @@ struct Time Settime(struct Time original,uint8_t num)
 					case 6:
 					case 7:
 					case 8:
-					case 9:switch(settingparameter)
+					case 9:switch(settingparameter)//输入对应的数字位
 					{
 						case HOUR:sethour=setparameter(2,sethour,status);
 						if(yscale==0||yscale==8)
@@ -1326,14 +1010,14 @@ struct Time Settime(struct Time original,uint8_t num)
 			}
 		}
 		lastnumber=status;
-		if(iscanceled)
+		if(iscanceled)//没有设置成功退出
 		{
 			return original;
 			break;
 		}
 		if(isset)
 		{
-			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)
+			if(sethour>=0&&sethour<=23&&setminute>=0&&setminute<=59&&setsecond>=0&&setsecond<=59)//验证可用
 			{
 				result.hour=sethour;
 				result.minute=setminute;
@@ -1342,7 +1026,7 @@ struct Time Settime(struct Time original,uint8_t num)
 				return result;
 				break;
 			}
-			else
+			else//不可用直接退出
 			{
 				OLED_Clear();
 				OLED_ShowString(0,0,"Invalid input!");
@@ -1356,7 +1040,7 @@ struct Time Settime(struct Time original,uint8_t num)
 	return original;
 }
 
-void Setdate(void)
+void Setdate(void)//日期设置
 {
 	unsigned int yscale=0;
 	unsigned int status=114514;
@@ -1592,7 +1276,7 @@ void Setdate(void)
 	//return false;
 }
 
-void DisplayAlarm(struct Alarm* alarms)
+void DisplayAlarm(struct Alarm* alarms)//闹钟界面显示
 {
   int status=114514;
   int lastnumber=1;
@@ -1652,7 +1336,7 @@ void DisplayAlarm(struct Alarm* alarms)
   }
 }
 
-void DisplayCounter(void)
+void DisplayCounter(void)//计时器显示
 {
 	struct Date timer={0,0,0,0,0,0};
   int status=114514;
@@ -1670,14 +1354,14 @@ void DisplayCounter(void)
 		timer.time.second=timersecond;
 		timer.time.minute=timerminute;
 		timer.time.hour=timerhour;
-		if(timer.time.hour==0&&timer.time.minute==0&&timer.time.second==0)
+		if(timer.time.hour==0&&timer.time.minute==0&&timer.time.second==0)//计时结束
 		{	
 			OLED_Clear();
 			isstart=false;
 			isticking=false;
-			DL_TimerG_stopCounter(TIMER_1_INST);
-			NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);
-			Beep(timer);
+			DL_TimerG_stopCounter(TIMER_1_INST);//结束计时
+			NVIC_DisableIRQ(TIMER_1_INST_INT_IRQN);//关中断
+			Beep(timer);//鸣响
 			ismove=true;
 			isticked=false;
 		}
@@ -1702,7 +1386,7 @@ void DisplayCounter(void)
 	}
 	if(isticking)
 	{
-		showtimesimplified(0,0,timerhour,timerminute,timersecond);
+		showtimesimplified(0,0,timerhour,timerminute,timersecond);//显示时钟
 		isticked=false;
 	}
 	if(ismove)
@@ -1779,16 +1463,16 @@ void DisplayCounter(void)
   }
 }
 
-bool CheckAlarm(struct Date target,struct Alarm alarms[3])
+bool CheckAlarm(struct Date target,struct Alarm alarms[3])//闹钟检测函数
 {
-  struct Alarm comp={target.time.hour, target.time.minute,target.time.second,true};
-  if(CompareAlarm(alarms[0],comp)||CompareAlarm(alarms[1],comp)||CompareAlarm(alarms[2],comp))
+  struct Alarm comp={target.time.hour, target.time.minute,target.time.second,true};//将现在的时间初始化为一个闹钟结构体变量方便比较
+  if(CompareAlarm(alarms[0],comp)||CompareAlarm(alarms[1],comp)||CompareAlarm(alarms[2],comp))//比较闹钟
   	return true;
   else
   	return false;
 }
 
-bool CompareAlarm(struct Alarm target1,struct Alarm target2)
+bool CompareAlarm(struct Alarm target1,struct Alarm target2)//闹钟比较函数
 {
 	if(target1.time.hour==target2.time.hour&&target1.time.minute==target2.time.minute&&target1.time.second==target2.time.second&&target1.ison==target2.ison)
 		return true;
@@ -1796,28 +1480,28 @@ bool CompareAlarm(struct Alarm target1,struct Alarm target2)
 		return false;
 }
 
-void Beep(struct Date target)
+void Beep(struct Date target)//蜂鸣器操控函数
 {
 	DL_GPIO_clearPins(BUZZER_PORT,BUZZER_SDA_PIN);
 	OLED_Clear();
-	showtimesimplified(0,0,target.time.hour,target.time.minute,target.time.second);
-	OLED_ShowString(0,6,"Press to stop");
+	showtimesimplified(0,0,target.time.hour,target.time.minute,target.time.second);//显示当前时间
+	OLED_ShowString(0,6,"Press to stop");//显示提示语
 	while(1)
 	{
-		Buzz(C3,200);
+		Buzz(C3,200);//鸣响，持续时间200ms，音调C
 		delay_cycles(1700000);
-		if(scan()!=114514)
+		if(scan()!=114514)//任意键按下
 		{
 			break;
 		}
 	}
-	DL_GPIO_setPins(BUZZER_PORT,BUZZER_SDA_PIN);
-	OLED_Clear();
+	DL_GPIO_setPins(BUZZER_PORT,BUZZER_SDA_PIN);//LED置位
+	OLED_Clear();//清屏
 }
 
-void Buzz(unsigned int frequency,unsigned int duration)
+void Buzz(unsigned int frequency,unsigned int duration)//蜂鸣器驱动函数
 {
-	unsigned int buzztime=(duration/1000.0)*frequency;
+	unsigned int buzztime=(duration/1000.0)*frequency;//鸣响时间
 	for(unsigned int i=0;i<buzztime;i++)
 	{
 		DL_GPIO_togglePins(BUZZER_PORT,BUZZER_SCL_PIN);
@@ -1827,7 +1511,7 @@ void Buzz(unsigned int frequency,unsigned int duration)
 	delay_cycles(3400000);
 }
 
-void readalarm(struct Alarm* target)
+void readalarm(struct Alarm* target)//读取闹钟函数
 {
   for(unsigned int i=0;i<EEPROM_EMULATION_DATA_SIZE/sizeof(uint32_t);i++)
 		EEPROMEmulationBuffer[i]=0;
@@ -1839,7 +1523,7 @@ void readalarm(struct Alarm* target)
 	target[2]=result[2];
 }
 
-bool validatealarm(struct Alarm target)
+bool validatealarm(struct Alarm target)//检验闹钟合法性函数
 {
   if(target.time.hour>=0&&target.time.hour<=23&&target.time.minute>=0&&target.time.minute<=59&&target.time.second>=0&&target.time.second<=59)
     return true;
@@ -1847,7 +1531,7 @@ bool validatealarm(struct Alarm target)
     return false;
 }
 
-void save(struct Date savedate,struct Alarm savealarm[3])
+void save(struct Date savedate,struct Alarm savealarm[3])//保存闹钟和日期函数
 {
 	uint32_t dataarray[EEPROM_EMULATION_DATA_SIZE / sizeof(uint32_t)]={0};
 	EEPROM_TypeA_eraseAllSectors();
@@ -1870,16 +1554,16 @@ void save(struct Date savedate,struct Alarm savealarm[3])
 	dataarray[14]=savealarm[2].time.hour;
 	dataarray[15]=savealarm[2].time.minute;
 	dataarray[16]=savealarm[2].time.second;
-	dataarray[17]=savealarm[2].ison;
-	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);
-	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 18, DL_FLASHCTL_REGION_SELECT_MAIN);
+	dataarray[17]=savealarm[2].ison;//设置保存数组
+	DL_FlashCTL_unprotectSector( FLASHCTL, ADDRESS, DL_FLASHCTL_REGION_SELECT_MAIN);//接触FLASH写保护
+	DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 18, DL_FLASHCTL_REGION_SELECT_MAIN);//写数组
 	// DL_FlashCTL_programMemoryFromRAM( FLASHCTL, ADDRESS, dataarray, 6, DL_FLASHCTL_REGION_SELECT_MAIN);
 
 }
 
-struct Date read(uint8_t mode)
+struct Date read(uint8_t mode)//日期读取函数
 {
-	uint32_t address=ADDRESS;
+	uint32_t address=ADDRESS;//指向存储日期的地址
 	switch(mode)
 	{
 		case CLOCK:address=ADDRESS;break;
@@ -1896,7 +1580,7 @@ struct Date read(uint8_t mode)
 	return result;	
 }
 
-int setparameter(int maxcount,int parameter,int number)
+int setparameter(int maxcount,int parameter,int number)//参数设置通用函数
 {
 	int count=digitalcount(parameter);
 	if(count>=maxcount)
@@ -1908,7 +1592,7 @@ int setparameter(int maxcount,int parameter,int number)
 	}
 }
 
-int digitalcount(double input)
+int digitalcount(double input)//通过取模法读取数据位数
 {
 	int object=(int)input;
 	int result=1;
@@ -1922,14 +1606,14 @@ int digitalcount(double input)
 	return result;
 }
 
-int scan(void)
+int scan(void)//检测键盘
 {
 	int num=114514;
 					DL_GPIO_clearPins(MATRIX_PORT,MATRIX_V1_PIN);
 					DL_GPIO_setPins(MATRIX_PORT,MATRIX_V2_PIN);
 					DL_GPIO_setPins(MATRIX_PORT,MATRIX_V3_PIN);
-					DL_GPIO_setPins(MATRIX_PORT,MATRIX_V4_PIN);
-						if(debunce(MATRIX_H1_PIN,0))
+					DL_GPIO_setPins(MATRIX_PORT,MATRIX_V4_PIN);//V1复位
+						if(debunce(MATRIX_H1_PIN,0))//消抖后检测到键位
 						{
 							num=7;
 						}
@@ -2009,13 +1693,13 @@ int scan(void)
 						return num;
 }
 
-int debunce(uint32_t inputpin, uint32_t control)
+int debunce(uint32_t inputpin, uint32_t control)//消抖函数
 {
 	if(!control){
 	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
 	{
-	delay_cycles(400000);
-	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))
+	delay_cycles(400000);//读取到低位之后延时一小段时间
+	if(!(DL_GPIO_readPins(MATRIX_PORT, inputpin)))//接着读取到低位则判定为真
 		return 1;
 	else 
 		return 0;
@@ -2038,7 +1722,7 @@ int debunce(uint32_t inputpin, uint32_t control)
 }
 
 int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
-{
+{//计算星期
 	uint32_t tempyear=countyear;
 	uint8_t tempmonth=countmonth;
 	uint8_t tempday=countday;
@@ -2050,16 +1734,329 @@ int countweek(uint32_t countyear,uint8_t countmonth,uint8_t countday)
 	return (tempday+2*tempmonth+3*(tempmonth+1)/5+tempyear+tempyear/4-tempyear/100+tempyear/400)%7;
 }
 
-/*更新预计
---4，计时器配置,4s卡一下--
-6,debunce to bool
+void order(void)//蓝牙指令函数
+{
+	switch(databuff[0])
+	{
+		case '?'://询问指令：?t*,?t#,?c*1,?c*2,?c*3,?c*a，时间戳十六进制，精度秒
+			switch(databuff[1])
+			{
+				case 't':transmittime(databuff[2]);break;//询问时间
+				case 'c':transmitclock(databuff[2],databuff[3]);break;//询问时钟
+			}
+		break;
+		case 's'://设置指令：st*,st#,sc*1,sc*2,sc*3,sc1y,sc1n,sc2y,sc2n,sc3y,sc3n/yyyymmddhhmmss
+			switch(databuff[1])
+			{
+				case 't':blesettime(databuff);break;//设置时间
+				case 'c':blesetclock(databuff);break;//设置时钟
+			}
+		break;
+		default:break;
+	}
+	for(uint8_t i=0;i<idx;i++)
+	{
+		databuff[i]=0;//清除缓存
+	}
+	idx=0;
+}
 
-目前问题
---3，存储不灵敏--
-5, 退格
-*/
+void transmittime(uint8_t mode)
+{
+	uint8_t* p=NULL;
+	uint32_t stamp=0;
+	switch(mode)
+	{
+		case '*':
+			bledate(date);//发送时间
+		break;//正常日期
+		case '#':
+			stamp=timetostamp(date);//将时间转换为时间戳
+			p=(uint8_t*)&stamp;
+			for(uint8_t i=0;i<4;i++)
+			{
+				DL_UART_transmitDataBlocking(UART0,*(p+i));//发送时间戳
+			}
+			DL_UART_transmitDataBlocking(UART0,'\n');//结束符
+		break;//时间戳
+	}
+}
 
-char* itoa(int num,char* str,int radix)
+void transmitclock(uint8_t mode,uint8_t idx)
+{
+	switch(mode)
+	{
+		case '*':
+			if(idx=='a')//发送所有时钟配置
+			{
+				DL_UART_transmitDataBlocking(UART0,(alarms[0].ison)?'Y':'N');
+				bletime(alarms[0].time);
+				DL_UART_transmitDataBlocking(UART0,(alarms[1].ison)?'Y':'N');
+				bletime(alarms[1].time);
+				DL_UART_transmitDataBlocking(UART0,(alarms[2].ison)?'Y':'N');
+				bletime(alarms[2].time);
+			}
+			else if(idx>='0'&&idx<='5')//发送指定的时钟配置
+			{
+				DL_UART_transmitDataBlocking(UART0,(alarms[idx-'0'-1].ison)?'Y':'N');
+				bletime(alarms[idx-'0'-1].time);
+			}
+		break;//发送闹钟
+		default:break;
+	}
+}
+
+void blesettime(uint8_t* datas)//设置时间
+{
+	uint32_t year=0;
+	uint8_t month=0;
+	uint8_t day=0;
+	uint8_t hour=0;
+	uint8_t minute=0;
+	uint8_t second=0;
+	uint32_t stamp=0;
+	struct Date temp={0,0,0,0,0,0};
+	switch(datas[2])
+	{
+		case '*':
+			year=(uint32_t)(datas[3]-'0')*1000+(uint32_t)(datas[4]-'0')*100+(uint32_t)(datas[5]-'0')*10+(uint32_t)(datas[6]-'0');
+			month=(uint8_t)(datas[7]-'0')*10+(uint8_t)(datas[8]-'0');
+			day=(uint8_t)(datas[9]-'0')*10+(uint8_t)(datas[10]-'0');
+			hour=(uint8_t)(datas[11]-'0')*10+(uint8_t)(datas[12]-'0');
+			minute=(uint8_t)(datas[13]-'0')*10+(uint8_t)(datas[14]-'0');
+			second=(uint8_t)(datas[15]-'0')*10+(uint8_t)(datas[16]-'0');
+			date.year=year;
+			date.month=month;
+			date.day=day;
+			date.time.hour=hour;
+			date.time.minute=minute;
+			date.time.second=second;
+			ischanged=true;
+			//设置时间
+		break;//正常日期
+		case '#':
+			stamp=stringtostamp(datas);
+			stamptotime(stamp,&temp);
+			//validate(temp);
+			date=temp;
+			ischanged=true;
+		break;//时间戳
+	}
+	return;
+}
+
+void blesetclock(uint8_t* datas)
+{//设置闹钟
+	uint8_t hour=0;
+	uint8_t minute=0;
+	uint8_t second=0;
+	struct Alarm temp={0,false};
+	uint8_t index=datas[3]-'0'-1;
+	switch(datas[2])
+	{
+		case '*':
+			hour=(uint8_t)(datas[4]-'0')*10+(uint8_t)(datas[5]-'0');
+			minute=(uint8_t)(datas[6]-'0')*10+(uint8_t)(datas[7]-'0');
+			second=(uint8_t)(datas[8]-'0')*10+(uint8_t)(datas[9]-'0');
+			temp.time.hour=hour;
+			temp.time.minute=minute;
+			temp.time.second=second;
+			temp.ison=(datas[10]=='Y')?true:false;//判断是否为开
+			if(validatealarm(temp))
+			{
+				alarms[index]=temp;
+				// alarms[index].ison=true;
+			}
+			//设置闹钟
+		break;//设置闹钟
+		case '1':
+		case '2':
+		case '3':if(datas[3]=='Y'||datas[3]=='y')
+				{
+					alarms[datas[2]-1-'0'].ison=true;
+				}
+				else if(datas[3]=='N'||datas[3]=='n')
+				{
+					alarms[datas[2]-1-'0'].ison=false;				}
+		default:break;
+	}
+}
+
+void bledate(struct Date target)
+{//发送日期函数
+	char string[5]={'\0'};
+	uint8_t week=9;
+	itoa(target.year,string,10);//转换时间为字符串
+	transmitstring(string);
+	itoa(target.month,string,10);
+	if(target.month<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	itoa(target.day,string,10);
+	if(target.day<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);//发送字符串
+	week=countweek(target.year,target.month,target.day);
+	switch(week)
+	{
+		case 0:transmitstring("MON");break;
+		case 1:transmitstring("TUE");break;
+		case 2:transmitstring("WED");break;
+		case 3:transmitstring("THU");break;
+		case 4:transmitstring("FRI");break;
+		case 5:transmitstring("SAT");break;
+		case 6:transmitstring("SUN");break;
+		default:break;
+	}
+	bletime(target.time);
+	return;
+}
+
+void bletime(struct Time target)
+{//发送时间函数
+	uint8_t* p=NULL;
+	char string[3]={'\0'};
+	itoa(target.hour,string,10);
+	if(target.hour<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	itoa(target.minute,string,10);
+	if(target.minute<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	itoa(target.second,string,10);
+	if(target.second<10)
+	{
+		DL_UART_transmitDataBlocking(UART0,'0');
+	}
+	transmitstring(string);
+	DL_UART_transmitDataBlocking(UART0,'\n');
+	return;
+}
+
+uint32_t timetostamp(struct Date target)//时间转换为时间戳
+{
+	static uint32_t dax=0;
+	static uint32_t day_count=0;
+	uint16_t leap_year_count=0;
+	uint16_t i;
+
+	for(i=1970;i<target.year;i++)
+	{
+		if(leapyear(i))
+		{
+			leap_year_count++;
+		}
+	}
+
+	day_count=leap_year_count*366+(target.year-1970-leap_year_count)*365;
+
+	for(i=1;i<target.month;i++)
+	{
+		if((2==i)&&(leapyear(target.year)))
+		{
+			day_count+=29;
+		}
+		else
+		{
+			day_count+=month_days_table[i];
+		}
+	}
+
+	day_count+=(target.day-1);
+
+	dax=(uint32_t)(day_count*86400)+(uint32_t)((uint32_t)target.time.hour*3600)+(uint32_t)((uint32_t)target.time.minute*60)+(uint32_t)target.time.second;
+
+	dax=dax-8*60*60;
+
+	return dax;
+}
+
+uint32_t stamptotime(uint32_t timep,struct Date* target)//时间戳转换为时间
+{
+	uint32_t days=0;
+	uint32_t rem=0;
+
+	timep=timep+8*60*60;
+
+	days=(uint32_t)(timep/86400);
+	rem=(uint32_t)(timep%86400);
+
+	uint16_t year;
+	for(year=1970;;++year)
+	{
+		uint16_t leap=((year%4==0&&year%100!=0)||(year%400==0));
+		uint16_t ydays=leap?366:365;
+		if(days<ydays)
+		{
+			break;
+		}
+		days-=ydays;
+	}
+
+	target->year=year;
+
+	static const uint16_t days_in_month[]={31,28,31,30,31,30,31,31,30,31,30,31};
+	uint16_t month;
+
+	for(month=0;month<12;month++)
+	{
+		uint16_t mdays=days_in_month[month];
+		if(month==1&&((year%4==0&&year%100!=0)||(year%400==0)))
+		{
+			mdays=29;
+		}
+		if(days<mdays)
+		{
+			break;
+		}
+		days-=mdays;
+	}
+	target->month=month+1;
+
+	target->day=days+1;
+
+	target->time.hour=rem/3600;
+	rem%=3600;
+	target->time.minute=rem/60;
+	target->time.second=rem%60;
+
+	return 0;
+
+}
+
+uint32_t stringtostamp(uint8_t* target)//字符串转换为十六进制时间戳
+{
+	//从3开始
+	const char shex[]="0123456789abcdef";
+	const char bhex[]="0123456789ABCDEF";
+	uint32_t stamp=0;
+
+	for(uint8_t i=3;target[i]!='\n';i++)
+	{
+		uint8_t j=0;
+		for(j=0;j<16;j++)
+		{
+			if(target[i]==shex[j]||target[i]==bhex[j])
+			{
+				break;
+			}
+		}
+		stamp=stamp*16+j;
+	}
+	return stamp;
+}
+
+
+char* itoa(int num,char* str,int radix)//数字转换为字符串
 {
     char index[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";//索引表
     unsigned unum;//存放要转换的整数的绝对值,转换的整数可能是负数
@@ -2099,7 +2096,7 @@ char* itoa(int num,char* str,int radix)
  
 }
 
-void transmitstring(char* p)
+void transmitstring(char* p)//串口发送字符串
 {
 	for(uint8_t i=0;p[i]!='\0';i++)
 	{
@@ -2107,103 +2104,3 @@ void transmitstring(char* p)
 	}
 	return;
 }
-/*
-void transmitdata(uint8_t mode, int value)
-{
-	char* thd="thd.val=";
-	char* u1="u1.val=";
-	char* u2="u2.val=";
-	char* u3="u3.val=";
-	char* u4="u4.val=";
-	char* u5="u5.val=";
-	char* tail="\xff\xff\xff";
-	char* add="add s0.id,0,";
-	char* p=NULL;
-	char stringvalue[10]={'\0'};
-	itoa(value,stringvalue,10);
-	switch(mode)
-	{
-		case 1:p=thd;break;
-		case 2:p=u1;break;
-		case 3:p=u2;break;
-		case 4:p=u3;break;
-		case 5:p=u4;break;
-		case 6:p=u5;break;
-		case 7:p=add;break;
-	}
-	transmitstring(p);
-	transmitstring(stringvalue);
-	transmitstring(tail);
-	return;
-}
-
-void transmit(float thd, float us[5],float curve)
-{
-	int thdvalue=thd*100;
-	int usvalue[5];
-	int curvevalue=(curvevalue>=0.6)?255:curve*1000/600*255;
-	for(uint8_t i=0;i<5;i++)
-	{
-		usvalue[i]=us[i]*100;
-	}
-	transmitdata(1,thdvalue);
-	transmitdata(2,usvalue[0]);
-	transmitdata(3,usvalue[1]);
-	transmitdata(4,usvalue[2]);
-	transmitdata(5,usvalue[3]);
-	transmitdata(6,usvalue[4]);
-	transmitdata(7,curvevalue);
-	return;
-}
-*/
-/*
-void transmittophone(float curve ,float thd, float u[5])
-{
-	uint8_t head=0xa5;
-	uint8_t tail=0x5a;
-	uint8_t check=0;
-	uint8_t* p=(uint8_t*)&curve;
-	DL_UART_transmitDataBlocking(UART0,head);
-	for(uint8_t i=0;i<4;i++)
-	{
-		DL_UART_transmitDataBlocking(UART0,*p);
-		check+=*p;
-		p++;
-	}
-	p=(uint8_t*)&thd;
-	for(uint8_t i=0;i<4;i++)
-	{
-		DL_UART_transmitDataBlocking(UART0,*p);
-		check+=*p;
-		p++;
-	}
-	p=(uint8_t*)u;
-	for(uint8_t i=0;i<20;i++)
-	{
-		DL_UART_transmitDataBlocking(UART0,*p);
-		check+=*p;
-		p++;
-	}
-	DL_UART_transmitDataBlocking(UART0,check);
-	DL_UART_transmitDataBlocking(UART0,tail);
-	return;
-}*/
-
-
-// void transmittophone(float data)
-// {
-// 	uint8_t head=0xa5;
-// 	uint8_t tail=0x5a;
-// 	uint8_t check=0;
-// 	uint8_t* p=(uint8_t*)&data;
-// 	DL_UART_transmitDataBlocking(UART0,head);
-// 	for(uint8_t i=0;i<4;i++)
-// 	{
-// 		DL_UART_transmitDataBlocking(UART0,*p);
-// 		check+=*p;
-// 		p++;
-// 	}
-// 	DL_UART_transmitDataBlocking(UART0,check);
-// 	DL_UART_transmitDataBlocking(UART0,tail);
-// 	return;
-// }
